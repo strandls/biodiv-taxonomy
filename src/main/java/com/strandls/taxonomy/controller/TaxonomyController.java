@@ -39,8 +39,7 @@ public class TaxonomyController {
 	@Produces(MediaType.APPLICATION_JSON)
 
 	@ApiOperation(value = "Find Taxonomy by ID", notes = "Returns Taxonomy details", response = TaxonomyDefinition.class)
-	@ApiResponses(value = { @ApiResponse(code = 200, message = "Success", response = TaxonomyDefinition.class),
-			@ApiResponse(code = 404, message = "UserGroup not found", response = String.class) })
+	@ApiResponses(value = { @ApiResponse(code = 404, message = "UserGroup not found", response = String.class) })
 
 	public Response getTaxonomyConceptName(@PathParam("taxonomyConceptId") String taxonomyConceptId) {
 		try {
