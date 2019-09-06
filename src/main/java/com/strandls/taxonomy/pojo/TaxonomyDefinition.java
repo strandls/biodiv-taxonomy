@@ -24,6 +24,7 @@ public class TaxonomyDefinition {
 	private String normalizedForm;
 	private String status;
 	private Long speciesId;
+	private Long rank;
 
 	@Id
 	@GeneratedValue
@@ -62,5 +63,16 @@ public class TaxonomyDefinition {
 	public void setSpeciesId(Long speciesId) {
 		this.speciesId = speciesId;
 	}
+
+	@Column(name = "rank")
+	public Long getRank() {
+		return rank;
+	}
+
+	public void setRank(Long rank) {
+		this.rank = rank;
+	}
+	
+	
 
 }

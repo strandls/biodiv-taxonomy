@@ -3,8 +3,11 @@
  */
 package com.strandls.taxonomy.dao;
 
+import java.util.List;
+
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +43,25 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 			session.close();
 		}
 		return entity;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public List<TaxonomyDefinition> breadCrumSearch(String path) {
+		Session session = sessionFactory.openSession();
+		List<TaxonomyDefinition> result = null;
+		
+		String qry = "from TaxonomyDefinition td where td.id in("+path+") order by td.rank";
+		try {
+			Query<TaxonomyDefinition> query = session.createQuery(qry);
+			result = query.getResultList();
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		}
+		finally {
+			session.close();
+		}
+		
+		return result;
 	}
 
 }

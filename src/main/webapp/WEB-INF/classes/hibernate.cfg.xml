@@ -17,5 +17,6 @@
 		<property name="show_sql">true</property>
 		
 		<mapping class="com.strandls.taxonomy.pojo.TaxonomyDefinition"/>
+		<mapping class="com.strandls.taxonomy.pojo.TaxonomyRegistry"/>
 	</session-factory>
 </hibernate-configuration>
