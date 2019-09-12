@@ -25,9 +25,9 @@
 		<openapi-generator-cli.version>4.0.3</openapi-generator-cli.version>
 
 		<!-- Project property -->
-		<war-name>taxonomy</war-name>
+		<war-name>taxonomy-api</war-name>
 		<srcDir>src/main/webapp</srcDir>
-		<base-path>/taxonomy/api</base-path>
+		<base-path>/taxonomy-api/api</base-path>
 		<location>com.strandls.taxonomy</location>
 	</properties>
 
