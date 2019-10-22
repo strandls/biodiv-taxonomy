@@ -16,6 +16,7 @@ public class TaxonomyDaoModule extends AbstractModule {
 	protected void configure() {
 		bind(TaxonomyDefinitionDao.class).in(Scopes.SINGLETON);
 		bind(TaxonomyRegistryDao.class).in(Scopes.SINGLETON);
+		bind(SpeciesGroupMappingDao.class).in(Scopes.SINGLETON);
 
 	}
 }

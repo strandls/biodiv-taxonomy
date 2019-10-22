@@ -3,6 +3,7 @@
  */
 package com.strandls.taxonomy.dao;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.hibernate.Session;
@@ -12,31 +13,31 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.inject.Inject;
-import com.strandls.taxonomy.pojo.TaxonomyDefinition;
+import com.strandls.taxonomy.pojo.SpeciesGroupMapping;
 import com.strandls.taxonomy.util.AbstractDAO;
 
 /**
  * @author Abhishek Rudra
  *
  */
-public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long> {
+public class SpeciesGroupMappingDao extends AbstractDAO<SpeciesGroupMapping, Long> {
 
-	private final Logger logger = LoggerFactory.getLogger(TaxonomyDefinitionDao.class);
+	private final Logger logger = LoggerFactory.getLogger(SpeciesGroupMappingDao.class);
 
 	/**
 	 * @param sessionFactory
 	 */
 	@Inject
-	protected TaxonomyDefinitionDao(SessionFactory sessionFactory) {
+	protected SpeciesGroupMappingDao(SessionFactory sessionFactory) {
 		super(sessionFactory);
 	}
 
 	@Override
-	public TaxonomyDefinition findById(Long id) {
+	public SpeciesGroupMapping findById(Long id) {
 		Session session = sessionFactory.openSession();
-		TaxonomyDefinition entity = null;
+		SpeciesGroupMapping entity = null;
 		try {
-			entity = session.get(TaxonomyDefinition.class, id);
+			entity = session.get(SpeciesGroupMapping.class, id);
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		} finally {
@@ -44,24 +45,22 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 		}
 		return entity;
 	}
-	
+
 	@SuppressWarnings("unchecked")
-	public List<TaxonomyDefinition> breadCrumbSearch(String path) {
+	public List<SpeciesGroupMapping> getTaxonomyId(Long sGroup) {
+
+		String qry = "from SpeciesGroupMapping where speciesGroupId = :sGroup";
 		Session session = sessionFactory.openSession();
-		List<TaxonomyDefinition> result = null;
-		
-		String qry = "from TaxonomyDefinition td where td.id in("+path+") order by td.rank";
+		List<SpeciesGroupMapping> result = new ArrayList<SpeciesGroupMapping>();
 		try {
-			Query<TaxonomyDefinition> query = session.createQuery(qry);
+			Query<SpeciesGroupMapping> query = session.createQuery(qry);
+			query.setParameter("sGroup", sGroup);
 			result = query.getResultList();
 		} catch (Exception e) {
 			logger.error(e.getMessage());
-		}
-		finally {
+		} finally {
 			session.close();
 		}
-		
 		return result;
 	}
-
 }
