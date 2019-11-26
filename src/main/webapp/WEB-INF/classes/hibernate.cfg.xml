@@ -15,8 +15,10 @@
 		<property name="hbm2ddl.auto">update</property>
 
 		<property name="show_sql">true</property>
-		
-		<mapping class="com.strandls.taxonomy.pojo.TaxonomyDefinition"/>
-		<mapping class="com.strandls.taxonomy.pojo.TaxonomyRegistry"/>
+
+		<mapping class="com.strandls.taxonomy.pojo.TaxonomyDefinition" />
+		<mapping class="com.strandls.taxonomy.pojo.TaxonomyRegistry" />
+		<mapping class="com.strandls.taxonomy.pojo.SpeciesGroup" />
+		<mapping class="com.strandls.taxonomy.pojo.SpeciesGroupMapping" />
 	</session-factory>
 </hibernate-configuration>

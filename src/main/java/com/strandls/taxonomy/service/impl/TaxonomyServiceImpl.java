@@ -7,10 +7,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.google.inject.Inject;
+import com.strandls.taxonomy.dao.SpeciesGroupDao;
 import com.strandls.taxonomy.dao.SpeciesGroupMappingDao;
 import com.strandls.taxonomy.dao.TaxonomyDefinitionDao;
 import com.strandls.taxonomy.dao.TaxonomyRegistryDao;
 import com.strandls.taxonomy.pojo.BreadCrumb;
+import com.strandls.taxonomy.pojo.SpeciesGroup;
 import com.strandls.taxonomy.pojo.SpeciesGroupMapping;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.pojo.TaxonomyRegistry;
@@ -30,6 +32,9 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 
 	@Inject
 	private SpeciesGroupMappingDao speciesMappingDao;
+
+	@Inject
+	private SpeciesGroupDao speciesGroupDao;
 
 	@Override
 	public TaxonomyDefinition fetchById(Long id) {
@@ -75,6 +80,12 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 			}
 		}
 		return allTaxonomyList;
+	}
+
+	@Override
+	public List<SpeciesGroup> findAllSpecies() {
+		List<SpeciesGroup> result = speciesGroupDao.findAll();
+		return result;
 	}
 
 }

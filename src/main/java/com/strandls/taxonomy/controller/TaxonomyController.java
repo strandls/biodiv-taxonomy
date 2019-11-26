@@ -18,6 +18,7 @@ import javax.ws.rs.core.Response.Status;
 import com.google.inject.Inject;
 import com.strandls.taxonomy.ApiConstants;
 import com.strandls.taxonomy.pojo.BreadCrumb;
+import com.strandls.taxonomy.pojo.SpeciesGroup;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.service.TaxonomySerivce;
 
@@ -88,6 +89,22 @@ public class TaxonomyController {
 			Long speciesId = Long.parseLong(sGroup);
 			List<String> taxonomyList = taxonomyService.fetchBySpeciesId(speciesId, taxonList);
 			return Response.status(Status.OK).entity(taxonomyList).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).build();
+		}
+	}
+
+	@GET
+	@Path(ApiConstants.SPECIES)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "Find all the SpeciesGroup", notes = "Returns all speciesGroup", response = SpeciesGroup.class, responseContainer = "List")
+	@ApiResponses(value = { @ApiResponse(code = 404, message = "Species Group not Found", response = String.class) })
+
+	public Response getAllSpeciesGroup() {
+		try {
+			List<SpeciesGroup> result = taxonomyService.findAllSpecies();
+			return Response.status(Status.OK).entity(result).build();
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).build();
 		}
