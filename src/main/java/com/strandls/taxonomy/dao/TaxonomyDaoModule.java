@@ -18,6 +18,7 @@ public class TaxonomyDaoModule extends AbstractModule {
 		bind(TaxonomyRegistryDao.class).in(Scopes.SINGLETON);
 		bind(SpeciesGroupMappingDao.class).in(Scopes.SINGLETON);
 		bind(SpeciesGroupDao.class).in(Scopes.SINGLETON);
+		bind(SpeciesPermissionDao.class).in(Scopes.SINGLETON);
 
 	}
 }

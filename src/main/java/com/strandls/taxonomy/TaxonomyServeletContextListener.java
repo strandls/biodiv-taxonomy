@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.servlet.GuiceServletContextListener;
+import com.strandls.authentication_utility.filter.FilterModule;
 import com.strandls.taxonomy.controller.TaxonomyControllerModule;
 import com.strandls.taxonomy.dao.TaxonomyDaoModule;
 import com.strandls.taxonomy.service.impl.TaxonomyServiceModule;
@@ -58,16 +59,16 @@ public class TaxonomyServeletContextListener extends GuiceServletContextListener
 
 				configuration = configuration.configure();
 				SessionFactory sessionFactory = configuration.buildSessionFactory();
-				
+
 				Map<String, String> props = new HashMap<String, String>();
 				props.put("javax.ws.rs.Application", ApplicationConfig.class.getName());
 				props.put("jersey.config.server.wadl.disableWadl", "true");
 
 				bind(SessionFactory.class).toInstance(sessionFactory);
 
-				serve("/api/*").with(GuiceContainer.class,props);
+				serve("/api/*").with(GuiceContainer.class, props);
 			}
-		}, new TaxonomyControllerModule(), new TaxonomyServiceModule(),new TaxonomyDaoModule());
+		}, new TaxonomyControllerModule(), new FilterModule(), new TaxonomyServiceModule(), new TaxonomyDaoModule());
 
 		return injector;
 

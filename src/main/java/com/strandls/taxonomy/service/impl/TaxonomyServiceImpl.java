@@ -9,11 +9,13 @@ import java.util.List;
 import com.google.inject.Inject;
 import com.strandls.taxonomy.dao.SpeciesGroupDao;
 import com.strandls.taxonomy.dao.SpeciesGroupMappingDao;
+import com.strandls.taxonomy.dao.SpeciesPermissionDao;
 import com.strandls.taxonomy.dao.TaxonomyDefinitionDao;
 import com.strandls.taxonomy.dao.TaxonomyRegistryDao;
 import com.strandls.taxonomy.pojo.BreadCrumb;
 import com.strandls.taxonomy.pojo.SpeciesGroup;
 import com.strandls.taxonomy.pojo.SpeciesGroupMapping;
+import com.strandls.taxonomy.pojo.SpeciesPermission;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.pojo.TaxonomyRegistry;
 import com.strandls.taxonomy.service.TaxonomySerivce;
@@ -35,6 +37,9 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 
 	@Inject
 	private SpeciesGroupDao speciesGroupDao;
+
+	@Inject
+	private SpeciesPermissionDao speciesPermissionDao;
 
 	@Override
 	public TaxonomyDefinition fetchById(Long id) {
@@ -86,6 +91,27 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 	public List<SpeciesGroup> findAllSpecies() {
 		List<SpeciesGroup> result = speciesGroupDao.findAll();
 		return result;
+	}
+
+	@Override
+	public Boolean checkValidatePermission(Long userId, Long taxonomyId) {
+
+		List<BreadCrumb> breadCrumbList = fetchByTaxonomyId(taxonomyId);
+		List<SpeciesPermission> allowedSpeciesPermissionList = speciesPermissionDao.findByUserId(userId);
+
+		List<Long> breadCrumbTaxonomyId = new ArrayList<Long>();
+		List<Long> allowedSpeciesTaxonomyList = new ArrayList<Long>();
+		for (BreadCrumb breadCrumb : breadCrumbList) {
+			breadCrumbTaxonomyId.add(breadCrumb.getId());
+		}
+		for (SpeciesPermission speciesPermission : allowedSpeciesPermissionList) {
+			allowedSpeciesTaxonomyList.add(speciesPermission.getTaxonConceptId());
+		}
+		for (Long permissionTaxonomy : allowedSpeciesTaxonomyList) {
+			if (breadCrumbTaxonomyId.contains(permissionTaxonomy))
+				return true;
+		}
+		return false;
 	}
 
 }

@@ -5,17 +5,23 @@ package com.strandls.taxonomy.controller;
 
 import java.util.List;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import org.pac4j.core.profile.CommonProfile;
+
 import com.google.inject.Inject;
+import com.strandls.authentication_utility.filter.ValidateUser;
+import com.strandls.authentication_utility.util.AuthUtil;
 import com.strandls.taxonomy.ApiConstants;
 import com.strandls.taxonomy.pojo.BreadCrumb;
 import com.strandls.taxonomy.pojo.SpeciesGroup;
@@ -109,4 +115,29 @@ public class TaxonomyController {
 			return Response.status(Status.BAD_REQUEST).build();
 		}
 	}
+
+	@GET
+	@Path(ApiConstants.VALIDATE + ApiConstants.PERMISSION + "/{taxonomyId}")
+	@Produces(MediaType.APPLICATION_JSON)
+	@ValidateUser
+
+	@ApiOperation(value = "Find the validate permission of a User", notes = "Returns boolean", response = Boolean.class)
+	@ApiResponses(value = {
+			@ApiResponse(code = 404, message = "Unable to Find the permission", response = String.class) })
+
+	public Response getValidatePermission(@Context HttpServletRequest request,
+			@PathParam("taxonomyId") String taxonomyId) {
+		try {
+			Long taxonId = Long.parseLong(taxonomyId);
+			CommonProfile profile = AuthUtil.getProfileFromRequest(request);
+			Long userId = Long.parseLong(profile.getId());
+
+			Boolean result = taxonomyService.checkValidatePermission(userId, taxonId);
+			return Response.status(Status.OK).entity(result).build();
+
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
+	}
+
 }

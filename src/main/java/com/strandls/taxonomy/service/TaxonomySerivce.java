@@ -22,4 +22,6 @@ public interface TaxonomySerivce {
 	public List<String> fetchBySpeciesId(Long id, List<String> taxonList);
 
 	public List<SpeciesGroup> findAllSpecies();
+
+	public Boolean checkValidatePermission(Long userId, Long taxonomyId);
 }
