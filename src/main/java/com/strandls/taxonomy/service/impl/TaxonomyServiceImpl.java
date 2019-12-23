@@ -66,7 +66,8 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 	public List<String> fetchBySpeciesId(Long id, List<String> taxonList) {
 		List<SpeciesGroupMapping> traitList = speciesMappingDao.getTaxonomyId(id);
 		for (SpeciesGroupMapping speciesGroup : traitList) {
-			taxonList.add(speciesGroup.getTaxonConceptId().toString());
+			if (speciesGroup.getTaxonConceptId() != null)
+				taxonList.add(speciesGroup.getTaxonConceptId().toString());
 		}
 		List<String> allTaxonomyList = new ArrayList<String>();
 		for (String taxonId : taxonList) {
@@ -74,12 +75,14 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 			String path[] = taxoRegistry.getPath().split("_");
 			for (int i = 0; i < path.length; i++) {
 				for (SpeciesGroupMapping speciesGroup : traitList) {
-					if (speciesGroup.getTaxonConceptId().toString().equals(path[i])) {
+					if (speciesGroup.getTaxonConceptId() != null
+							&& speciesGroup.getTaxonConceptId().toString().equals(path[i])) {
 						i = 0;
 						while (i < path.length) {
 							allTaxonomyList.add(path[i]);
 							i++;
 						}
+						break;
 					}
 				}
 			}
