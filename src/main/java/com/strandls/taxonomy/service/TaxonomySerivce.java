@@ -7,6 +7,7 @@ import java.util.List;
 
 import com.strandls.taxonomy.pojo.BreadCrumb;
 import com.strandls.taxonomy.pojo.SpeciesGroup;
+import com.strandls.taxonomy.pojo.TaxonTree;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 
 /**
@@ -23,5 +24,6 @@ public interface TaxonomySerivce {
 
 	public List<SpeciesGroup> findAllSpecies();
 
-	public Boolean checkValidatePermission(Long userId, Long taxonomyId);
+	public List<TaxonTree> fetchTaxonTrees(List<Long> taxonList);
+
 }

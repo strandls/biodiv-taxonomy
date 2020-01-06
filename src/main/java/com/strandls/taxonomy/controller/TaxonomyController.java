@@ -3,6 +3,8 @@
  */
 package com.strandls.taxonomy.controller;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
@@ -17,19 +19,18 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import org.pac4j.core.profile.CommonProfile;
-
 import com.google.inject.Inject;
 import com.strandls.authentication_utility.filter.ValidateUser;
-import com.strandls.authentication_utility.util.AuthUtil;
 import com.strandls.taxonomy.ApiConstants;
 import com.strandls.taxonomy.pojo.BreadCrumb;
 import com.strandls.taxonomy.pojo.SpeciesGroup;
+import com.strandls.taxonomy.pojo.TaxonTree;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.service.TaxonomySerivce;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 
@@ -117,22 +118,24 @@ public class TaxonomyController {
 	}
 
 	@GET
-	@Path(ApiConstants.VALIDATE + ApiConstants.PERMISSION + "/{taxonomyId}")
+	@Path(ApiConstants.BREADCRUMB)
+	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
+
 	@ValidateUser
-
-	@ApiOperation(value = "Find the validate permission of a User", notes = "Returns boolean", response = Boolean.class)
+	@ApiOperation(value = "Find taxon Tree for a list of Taxons", notes = "Returns a List of Taxon Tree", response = TaxonTree.class, responseContainer = "List")
 	@ApiResponses(value = {
-			@ApiResponse(code = 404, message = "Unable to Find the permission", response = String.class) })
+			@ApiResponse(code = 400, message = "unable to fetch the taxon Tree", response = String.class) })
 
-	public Response getValidatePermission(@Context HttpServletRequest request,
-			@PathParam("taxonomyId") String taxonomyId) {
+	public Response getTaxonTree(@Context HttpServletRequest request,
+			@ApiParam(name = "taxonList") @QueryParam("taxonList") String taxonList) {
 		try {
-			Long taxonId = Long.parseLong(taxonomyId);
-			CommonProfile profile = AuthUtil.getProfileFromRequest(request);
-			Long userId = Long.parseLong(profile.getId());
-
-			Boolean result = taxonomyService.checkValidatePermission(userId, taxonId);
+			List<String> taxList = Arrays.asList(taxonList);
+			List<Long> tList = new ArrayList<Long>();
+			for (String s : taxList) {
+				tList.add(Long.parseLong(s.trim()));
+			}
+			List<TaxonTree> result = taxonomyService.fetchTaxonTrees(tList);
 			return Response.status(Status.OK).entity(result).build();
 
 		} catch (Exception e) {
