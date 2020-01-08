@@ -88,7 +88,7 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 
 	@Override
 	public List<SpeciesGroup> findAllSpecies() {
-		List<SpeciesGroup> result = speciesGroupDao.findAll();
+		List<SpeciesGroup> result = speciesGroupDao.findAllOrdered();
 		return result;
 	}
 
