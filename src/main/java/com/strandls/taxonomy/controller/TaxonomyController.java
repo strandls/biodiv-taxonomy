@@ -130,7 +130,7 @@ public class TaxonomyController {
 	public Response getTaxonTree(@Context HttpServletRequest request,
 			@ApiParam(name = "taxonList") @QueryParam("taxonList") String taxonList) {
 		try {
-			List<String> taxList = Arrays.asList(taxonList);
+			String[] taxList = taxonList.split(",");
 			List<Long> tList = new ArrayList<Long>();
 			for (String s : taxList) {
 				tList.add(Long.parseLong(s.trim()));
