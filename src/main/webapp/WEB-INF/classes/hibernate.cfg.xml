@@ -20,5 +20,6 @@
 		<mapping class="com.strandls.taxonomy.pojo.TaxonomyRegistry" />
 		<mapping class="com.strandls.taxonomy.pojo.SpeciesGroup" />
 		<mapping class="com.strandls.taxonomy.pojo.SpeciesGroupMapping" />
+		<mapping class="com.strandls.taxonomy.pojo.AcceptedSynonym"/>
 	</session-factory>
 </hibernate-configuration>

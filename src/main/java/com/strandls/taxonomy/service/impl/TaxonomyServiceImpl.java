@@ -7,10 +7,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.google.inject.Inject;
+import com.strandls.taxonomy.dao.AcceptedSynonymDao;
 import com.strandls.taxonomy.dao.SpeciesGroupDao;
 import com.strandls.taxonomy.dao.SpeciesGroupMappingDao;
 import com.strandls.taxonomy.dao.TaxonomyDefinitionDao;
 import com.strandls.taxonomy.dao.TaxonomyRegistryDao;
+import com.strandls.taxonomy.pojo.AcceptedSynonym;
 import com.strandls.taxonomy.pojo.BreadCrumb;
 import com.strandls.taxonomy.pojo.SpeciesGroup;
 import com.strandls.taxonomy.pojo.SpeciesGroupMapping;
@@ -37,6 +39,9 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 	@Inject
 	private SpeciesGroupDao speciesGroupDao;
 
+	@Inject
+	private AcceptedSynonymDao acceptedSynonymDao;
+
 	@Override
 	public TaxonomyDefinition fetchById(Long id) {
 		TaxonomyDefinition taxonomy = taxonomyDao.findById(id);
@@ -46,6 +51,10 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 	@Override
 	public List<BreadCrumb> fetchByTaxonomyId(Long id) {
 		TaxonomyRegistry taxoRegistry = taxonomyRegistryDao.findbyTaxonomyId(id);
+		if (taxoRegistry == null) {
+			AcceptedSynonym acceptedSynonym = acceptedSynonymDao.findAccpetedId(id);
+			taxoRegistry = taxonomyRegistryDao.findbyTaxonomyId(acceptedSynonym.getAcceptedId());
+		}
 
 		String paths = taxoRegistry.getPath().replace("_", ",");
 		List<BreadCrumb> breadCrumbs = new ArrayList<BreadCrumb>();
