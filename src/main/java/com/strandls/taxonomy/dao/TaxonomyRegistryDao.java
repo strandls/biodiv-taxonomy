@@ -3,6 +3,10 @@
  */
 package com.strandls.taxonomy.dao;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.query.Query;
@@ -48,17 +52,32 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 	@SuppressWarnings("unchecked")
 	public TaxonomyRegistry findbyTaxonomyId(Long taxonomyId) {
 
+		InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream("config.properties");
+		Properties properties = new Properties();
+		try {
+			properties.load(in);
+		} catch (IOException e) {
+			logger.error(e.getMessage());
+		}
+		Long classificationId = Long.parseLong(properties.getProperty("classificationId"));
+
 		String qry = "from TaxonomyRegistry tr where tr.taxonomyDefinationId = :taxonomyId "
-				+ "and tr.classificationId = 265799";
+				+ "and tr.classificationId = :classificationId";
 		Session session = sessionFactory.openSession();
 		TaxonomyRegistry result = null;
 		try {
 			Query<TaxonomyRegistry> query = session.createQuery(qry);
 			query.setParameter("taxonomyId", taxonomyId);
+			query.setParameter("classificationId", classificationId);
 			result = query.getSingleResult();
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		} finally {
+			try {
+				in.close();
+			} catch (IOException e) {
+				logger.error(e.getMessage());
+			}
 			session.close();
 		}
 

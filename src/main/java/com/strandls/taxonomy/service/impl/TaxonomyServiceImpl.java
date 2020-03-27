@@ -7,11 +7,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.google.inject.Inject;
+import com.strandls.taxonomy.dao.AcceptedSynonymDao;
+import com.strandls.taxonomy.dao.SpeciesGroupDao;
 import com.strandls.taxonomy.dao.SpeciesGroupMappingDao;
 import com.strandls.taxonomy.dao.TaxonomyDefinitionDao;
 import com.strandls.taxonomy.dao.TaxonomyRegistryDao;
+import com.strandls.taxonomy.pojo.AcceptedSynonym;
 import com.strandls.taxonomy.pojo.BreadCrumb;
+import com.strandls.taxonomy.pojo.SpeciesGroup;
 import com.strandls.taxonomy.pojo.SpeciesGroupMapping;
+import com.strandls.taxonomy.pojo.TaxonTree;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.pojo.TaxonomyRegistry;
 import com.strandls.taxonomy.service.TaxonomySerivce;
@@ -31,6 +36,12 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 	@Inject
 	private SpeciesGroupMappingDao speciesMappingDao;
 
+	@Inject
+	private SpeciesGroupDao speciesGroupDao;
+
+	@Inject
+	private AcceptedSynonymDao acceptedSynonymDao;
+
 	@Override
 	public TaxonomyDefinition fetchById(Long id) {
 		TaxonomyDefinition taxonomy = taxonomyDao.findById(id);
@@ -40,6 +51,10 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 	@Override
 	public List<BreadCrumb> fetchByTaxonomyId(Long id) {
 		TaxonomyRegistry taxoRegistry = taxonomyRegistryDao.findbyTaxonomyId(id);
+		if (taxoRegistry == null) {
+			AcceptedSynonym acceptedSynonym = acceptedSynonymDao.findAccpetedId(id);
+			taxoRegistry = taxonomyRegistryDao.findbyTaxonomyId(acceptedSynonym.getAcceptedId());
+		}
 
 		String paths = taxoRegistry.getPath().replace("_", ",");
 		List<BreadCrumb> breadCrumbs = new ArrayList<BreadCrumb>();
@@ -56,7 +71,8 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 	public List<String> fetchBySpeciesId(Long id, List<String> taxonList) {
 		List<SpeciesGroupMapping> traitList = speciesMappingDao.getTaxonomyId(id);
 		for (SpeciesGroupMapping speciesGroup : traitList) {
-			taxonList.add(speciesGroup.getTaxonConceptId().toString());
+			if (speciesGroup.getTaxonConceptId() != null)
+				taxonList.add(speciesGroup.getTaxonConceptId().toString());
 		}
 		List<String> allTaxonomyList = new ArrayList<String>();
 		for (String taxonId : taxonList) {
@@ -64,17 +80,41 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 			String path[] = taxoRegistry.getPath().split("_");
 			for (int i = 0; i < path.length; i++) {
 				for (SpeciesGroupMapping speciesGroup : traitList) {
-					if (speciesGroup.getTaxonConceptId().toString().equals(path[i])) {
+					if (speciesGroup.getTaxonConceptId() != null
+							&& speciesGroup.getTaxonConceptId().toString().equals(path[i])) {
 						i = 0;
 						while (i < path.length) {
 							allTaxonomyList.add(path[i]);
 							i++;
 						}
+						break;
 					}
 				}
 			}
 		}
 		return allTaxonomyList;
+	}
+
+	@Override
+	public List<SpeciesGroup> findAllSpecies() {
+		List<SpeciesGroup> result = speciesGroupDao.findAllOrdered();
+		return result;
+	}
+
+	@Override
+	public List<TaxonTree> fetchTaxonTrees(List<Long> taxonList) {
+		List<TaxonTree> taxonTree = new ArrayList<TaxonTree>();
+
+		for (Long taxon : taxonList) {
+			List<Long> taxonPath = new ArrayList<Long>();
+			List<BreadCrumb> breadCrumbs = fetchByTaxonomyId(taxon);
+			for (BreadCrumb breadCrumb : breadCrumbs) {
+				taxonPath.add(breadCrumb.getId());
+			}
+			taxonTree.add(new TaxonTree(taxon, taxonPath));
+		}
+
+		return taxonTree;
 	}
 
 }
