@@ -33,7 +33,6 @@ import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import com.google.inject.servlet.GuiceServletContextListener;
 import com.google.inject.servlet.ServletModule;
-import com.strandls.authentication_utility.filter.FilterModule;
 import com.strandls.taxonomy.controller.TaxonomyControllerModule;
 import com.strandls.taxonomy.dao.TaxonomyDaoModule;
 import com.strandls.taxonomy.service.impl.TaxonomyServiceModule;
@@ -77,7 +76,7 @@ public class TaxonomyServeletContextListener extends GuiceServletContextListener
 
 				serve("/api/*").with(ServletContainer.class, props);
 			}
-		}, new TaxonomyControllerModule(), new FilterModule(), new TaxonomyServiceModule(), new TaxonomyDaoModule());
+		}, new TaxonomyControllerModule(), new TaxonomyServiceModule(), new TaxonomyDaoModule());
 
 		return injector;
 
