@@ -6,6 +6,7 @@ package com.strandls.taxonomy.controller;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -18,7 +19,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import com.google.inject.Inject;
 import com.strandls.authentication_utility.filter.ValidateUser;
 import com.strandls.taxonomy.ApiConstants;
 import com.strandls.taxonomy.pojo.BreadCrumb;
@@ -129,6 +129,7 @@ public class TaxonomyController {
 	public Response getTaxonTree(@Context HttpServletRequest request,
 			@ApiParam(name = "taxonList") @QueryParam("taxonList") String taxonList) {
 		try {
+			
 			String[] taxList = taxonList.split(",");
 			List<Long> tList = new ArrayList<Long>();
 			for (String s : taxList) {
