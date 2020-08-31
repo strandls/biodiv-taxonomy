@@ -125,7 +125,7 @@ public class TaxonomyController {
 
 	public Response getAllSpeciesGroupByName(@ApiParam("speciesName") @PathParam("speciesName") String speciesName) {
 		try {
-			List<SpeciesGroup> result = taxonomyService.findAllSpecies();
+			SpeciesGroup result = taxonomyService.fetchBySpeciesGroupName(speciesName);
 			return Response.status(Status.OK).entity(result).build();
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).build();
