@@ -117,6 +117,22 @@ public class TaxonomyController {
 	}
 
 	@GET
+	@Path(ApiConstants.SPECIES + "/{speciesName}")
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "Find SpeciesGroup by SpeciesGroup Name", notes = "Returns speciesGroup", response = SpeciesGroup.class)
+	@ApiResponses(value = { @ApiResponse(code = 404, message = "Species Group not Found", response = String.class) })
+
+	public Response getAllSpeciesGroupByName(@ApiParam("speciesName") @QueryParam("speciesName") String speciesName) {
+		try {
+			List<SpeciesGroup> result = taxonomyService.findAllSpecies();
+			return Response.status(Status.OK).entity(result).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).build();
+		}
+	}
+
+	@GET
 	@Path(ApiConstants.BREADCRUMB)
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)

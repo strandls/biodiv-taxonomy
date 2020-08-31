@@ -117,5 +117,11 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 
 		return taxonTree;
 	}
+	
+	@Override
+	public SpeciesGroup fetchBySpeciesGroupName(String speciesName) {
+		SpeciesGroup group = speciesGroupDao.findBySpeciesGroupName(speciesName);
+		return group;
+	}
 
 }

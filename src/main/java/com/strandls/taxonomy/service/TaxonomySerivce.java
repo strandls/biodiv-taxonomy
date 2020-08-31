@@ -23,6 +23,8 @@ public interface TaxonomySerivce {
 	public List<String> fetchBySpeciesId(Long id, List<String> taxonList);
 
 	public List<SpeciesGroup> findAllSpecies();
+	
+	public SpeciesGroup fetchBySpeciesGroupName(String speciesGroupName);
 
 	public List<TaxonTree> fetchTaxonTrees(List<Long> taxonList);
 

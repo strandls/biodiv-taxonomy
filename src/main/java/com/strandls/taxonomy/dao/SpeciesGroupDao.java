@@ -5,8 +5,11 @@ package com.strandls.taxonomy.dao;
 
 import java.util.List;
 
+import org.hibernate.Criteria;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.criterion.MatchMode;
+import org.hibernate.criterion.Restrictions;
 import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,6 +66,26 @@ public class SpeciesGroupDao extends AbstractDAO<SpeciesGroup, Long> {
 			session.close();
 		}
 		return result;
+	}
+	
+	@SuppressWarnings("deprecation")
+	public SpeciesGroup findBySpeciesGroupName(String speciesGroupName) {
+		Session session = sessionFactory.openSession();
+		SpeciesGroup group = null;
+		
+		try {
+			Criteria criteria = session.createCriteria(SpeciesGroup.class);
+			criteria.add(Restrictions.like("name", speciesGroupName, MatchMode.ANYWHERE).ignoreCase());
+			criteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
+			group = (SpeciesGroup) criteria.uniqueResult();
+			
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		
+		return group;
 	}
 
 }
