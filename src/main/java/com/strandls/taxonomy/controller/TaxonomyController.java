@@ -128,6 +128,7 @@ public class TaxonomyController {
 			SpeciesGroup result = taxonomyService.fetchBySpeciesGroupName(speciesName);
 			return Response.status(Status.OK).entity(result).build();
 		} catch (Exception e) {
+			e.printStackTrace();
 			return Response.status(Status.BAD_REQUEST).build();
 		}
 	}
