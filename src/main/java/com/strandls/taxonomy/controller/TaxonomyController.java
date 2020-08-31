@@ -123,7 +123,7 @@ public class TaxonomyController {
 	@ApiOperation(value = "Find SpeciesGroup by SpeciesGroup Name", notes = "Returns speciesGroup", response = SpeciesGroup.class)
 	@ApiResponses(value = { @ApiResponse(code = 404, message = "Species Group not Found", response = String.class) })
 
-	public Response getAllSpeciesGroupByName(@ApiParam("speciesName") @QueryParam("speciesName") String speciesName) {
+	public Response getAllSpeciesGroupByName(@ApiParam("speciesName") @PathParam("speciesName") String speciesName) {
 		try {
 			List<SpeciesGroup> result = taxonomyService.findAllSpecies();
 			return Response.status(Status.OK).entity(result).build();
