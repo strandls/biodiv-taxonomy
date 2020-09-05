@@ -11,12 +11,14 @@ import javax.inject.Inject;
 import com.strandls.taxonomy.dao.AcceptedSynonymDao;
 import com.strandls.taxonomy.dao.SpeciesGroupDao;
 import com.strandls.taxonomy.dao.SpeciesGroupMappingDao;
+import com.strandls.taxonomy.dao.SpeciesPermissionDao;
 import com.strandls.taxonomy.dao.TaxonomyDefinitionDao;
 import com.strandls.taxonomy.dao.TaxonomyRegistryDao;
 import com.strandls.taxonomy.pojo.AcceptedSynonym;
 import com.strandls.taxonomy.pojo.BreadCrumb;
 import com.strandls.taxonomy.pojo.SpeciesGroup;
 import com.strandls.taxonomy.pojo.SpeciesGroupMapping;
+import com.strandls.taxonomy.pojo.SpeciesPermission;
 import com.strandls.taxonomy.pojo.TaxonTree;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.pojo.TaxonomyRegistry;
@@ -42,6 +44,9 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 
 	@Inject
 	private AcceptedSynonymDao acceptedSynonymDao;
+
+	@Inject
+	private SpeciesPermissionDao speciesPermissionDao;
 
 	@Override
 	public TaxonomyDefinition fetchById(Long id) {
@@ -122,6 +127,12 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 	public SpeciesGroup fetchBySpeciesGroupName(String speciesName) {
 		SpeciesGroup group = speciesGroupDao.findBySpeciesGroupName(speciesName);
 		return group;
+	}
+
+	@Override
+	public List<SpeciesPermission> getSpeciesPermissions(Long userId) {
+		List<SpeciesPermission> allowedTaxonList = speciesPermissionDao.findByUserId(userId);
+		return allowedTaxonList;
 	}
 
 }
