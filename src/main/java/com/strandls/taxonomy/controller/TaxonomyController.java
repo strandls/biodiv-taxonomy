@@ -19,10 +19,14 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import org.pac4j.core.profile.CommonProfile;
+
 import com.strandls.authentication_utility.filter.ValidateUser;
+import com.strandls.authentication_utility.util.AuthUtil;
 import com.strandls.taxonomy.ApiConstants;
 import com.strandls.taxonomy.pojo.BreadCrumb;
 import com.strandls.taxonomy.pojo.SpeciesGroup;
+import com.strandls.taxonomy.pojo.SpeciesPermission;
 import com.strandls.taxonomy.pojo.TaxonTree;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.service.TaxonomySerivce;
@@ -129,7 +133,7 @@ public class TaxonomyController {
 	public Response getTaxonTree(@Context HttpServletRequest request,
 			@ApiParam(name = "taxonList") @QueryParam("taxonList") String taxonList) {
 		try {
-			
+
 			String[] taxList = taxonList.split(",");
 			List<Long> tList = new ArrayList<Long>();
 			for (String s : taxList) {
@@ -143,4 +147,23 @@ public class TaxonomyController {
 		}
 	}
 
+	@GET
+	@Path(ApiConstants.SPECIES + ApiConstants.PERMISSION)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ValidateUser
+
+	@ApiOperation(value = "get the speciesPermisison", notes = "return list of taxonomy id in which user can validate", response = SpeciesPermission.class, responseContainer = "List")
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to get the list", response = String.class) })
+
+	public Response getSpeciesPermission(@Context HttpServletRequest request) {
+		try {
+			CommonProfile profile = AuthUtil.getProfileFromRequest(request);
+			Long userId = Long.parseLong(profile.getId());
+			List<SpeciesPermission> result = taxonomyService.getSpeciesPermissions(userId);
+			return Response.status(Status.OK).entity(result).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
+	}
 }
