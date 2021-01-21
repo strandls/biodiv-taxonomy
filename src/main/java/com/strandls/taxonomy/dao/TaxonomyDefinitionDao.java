@@ -3,15 +3,17 @@
  */
 package com.strandls.taxonomy.dao;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import javax.inject.Inject;
+import javax.persistence.NoResultException;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.inject.Inject;
 
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.util.AbstractDAO;
@@ -45,24 +47,41 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 		}
 		return entity;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public List<TaxonomyDefinition> breadCrumbSearch(String path) {
 		Session session = sessionFactory.openSession();
 		List<TaxonomyDefinition> result = null;
-		
-		String qry = "from TaxonomyDefinition td where td.id in("+path+") order by td.rank";
+
+		String qry = "from " + daoType.getSimpleName() + " t where t.id in(" + path + ")";// + " order by t.rank";
 		try {
 			Query<TaxonomyDefinition> query = session.createQuery(qry);
 			result = query.getResultList();
 		} catch (Exception e) {
 			logger.error(e.getMessage());
-		}
-		finally {
+		} finally {
 			session.close();
 		}
-		
+
 		return result;
+	}
+
+	public List<TaxonomyDefinition> findByCanonicalForm(String canonicalForm, String rankName) {
+		String queryStr = "" + "from " + daoType.getSimpleName() + " t "
+				+ "where t.canonicalForm = :canonicalForm and t.rank = :rank and isDeleted = false";
+		try (Session session = sessionFactory.openSession()) {
+			Query<TaxonomyDefinition> query = session.createQuery(queryStr, TaxonomyDefinition.class);
+			query.setParameter("canonicalForm", canonicalForm);
+			query.setParameter("rank", rankName);
+			try {
+				List<TaxonomyDefinition> result = query.getResultList();
+				if(result == null || result.isEmpty()) return new ArrayList<TaxonomyDefinition>();
+				return result;
+			} catch (NoResultException e) {
+				return new ArrayList<TaxonomyDefinition>();
+			}
+		}
+
 	}
 
 }
