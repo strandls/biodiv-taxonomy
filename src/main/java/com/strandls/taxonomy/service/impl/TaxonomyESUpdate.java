@@ -1,6 +1,9 @@
 package com.strandls.taxonomy.service.impl;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
+import java.util.Properties;
 
 import javax.inject.Inject;
 
@@ -28,6 +31,19 @@ public class TaxonomyESUpdate {
 	private EsServicesApi esServicesApi;
 	
 	public static String LEFT_OUTER_JOIN = "left outer join ";
+	
+	private static String DB_NAME;
+	
+	static {
+		InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream("config.properties");
+		Properties properties = new Properties();
+		try {
+			properties.load(in);
+		} catch (IOException e) {
+			
+		}
+		DB_NAME = properties.getProperty("language.db.name");
+	}
 	
 	@Inject
 	public TaxonomyESUpdate() {}
@@ -76,7 +92,7 @@ public class TaxonomyESUpdate {
 									"from (" + 
 										"select id, name , taxon_concept_id,language_id,language_name,three_letter_code from " + 
 										"(select id, name, language_id, taxon_concept_id from common_names where is_deleted = false and name !~ '^[0-9][0-9]|^[)`-]|^A$|^0$') CN " + 
-										"left outer join dblink('dbname=biodiv', 'select id l_id, name as language_name, three_letter_code from language') as L (l_id integer, language_name varchar, three_letter_code varchar) " + 
+										"left outer join dblink('dbname=" + DB_NAME +  "', 'select id l_id, name as language_name, three_letter_code from language') as L (l_id integer, language_name varchar, three_letter_code varchar) " + 
 										"on CN.language_id = L.l_id " + 
 									") CN GROUP BY taxon_concept_id " + 
 								") CN " + 
