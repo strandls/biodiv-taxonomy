@@ -11,4 +11,6 @@ public interface TaxonomyRegistryService {
 	
 	public List<TaxonTree> fetchTaxonTrees(List<Long> taxonList);
 
+	public List<BreadCrumb> getImmediateChildsForTaxon(String nodePath);
+
 }

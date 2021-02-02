@@ -80,4 +80,24 @@ public class TaxonomyRegistryController {
 			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
 		}
 	}
+	
+	@GET
+	@Path(ApiConstants.CHILDREN)
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "Find taxon Tree for a list of Taxons", notes = "Returns a List of Taxon Tree", response = TaxonTree.class, responseContainer = "List")
+	@ApiResponses(value = {
+			@ApiResponse(code = 400, message = "unable to fetch the taxon Tree", response = String.class) })
+
+	public Response getImmediateChildsForTaxon(@Context HttpServletRequest request,
+			@ApiParam(name = "nodePath") @QueryParam("nodePath") String nodePath) {
+		try {
+			List<BreadCrumb> result = taxonomyRegistry.getImmediateChildsForTaxon(nodePath);
+			return Response.status(Status.OK).entity(result).build();
+
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
+	}
 }

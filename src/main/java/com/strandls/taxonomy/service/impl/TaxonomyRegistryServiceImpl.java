@@ -65,5 +65,10 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 
 		return taxonTree;
 	}
+	
+	@Override
+	public List<BreadCrumb> getImmediateChildsForTaxon(String nodePath) {
+		return taxonomyRegistryDao.getImmediateChildsForTaxon(nodePath);
+	}
 
 }

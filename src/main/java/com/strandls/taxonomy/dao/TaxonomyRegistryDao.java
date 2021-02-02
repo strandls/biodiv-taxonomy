@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.strandls.taxonomy.pojo.TaxonomyRegistry;
+import com.strandls.taxonomy.pojo.response.BreadCrumb;
 import com.strandls.taxonomy.util.AbstractDAO;
 
 /**
@@ -29,6 +30,18 @@ import com.strandls.taxonomy.util.AbstractDAO;
 public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 
 	private final Logger logger = LoggerFactory.getLogger(TaxonomyRegistryDao.class);
+
+	private static Long CLASSIFICATION_ID;
+
+	static {
+		InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream("config.properties");
+		Properties properties = new Properties();
+		try {
+			properties.load(in);
+		} catch (IOException e) {
+		}
+		CLASSIFICATION_ID = Long.parseLong(properties.getProperty("classificationId"));
+	}
 
 	/**
 	 * @param sessionFactory
@@ -94,7 +107,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		if (speciesGroupTaxonIds.isEmpty())
 			return new ArrayList<String>();
 		String speciesGroupTaxons = String.join("|", speciesGroupTaxonIds);
-		speciesGroupTaxons = "*." + speciesGroupTaxons +".*";
+		speciesGroupTaxons = "*." + speciesGroupTaxons + ".*";
 
 		InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream("config.properties");
 		Properties properties = new Properties();
@@ -128,6 +141,27 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 			session.close();
 		}
 		return result;
+	}
+
+	public List<BreadCrumb> getImmediateChildsForTaxon(String nodePath) {
+
+		// Search for the immediate child's of the given nodes
+		nodePath = nodePath + ".*{1}";
+		
+		String qry = "select td.id, td.name from (select taxon_definition_id from taxonomy_registry where path ~ lquery(:nodePath)) tr "
+				+ "inner join taxonomy_definition td on tr.taxon_definition_id = td.id";
+		
+		Session session = sessionFactory.openSession();
+		try {
+			NativeQuery query = session.createNativeQuery(qry);
+			query.setParameter("nodePath", nodePath);
+			return query.getResultList();
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return null;
 	}
 
 }

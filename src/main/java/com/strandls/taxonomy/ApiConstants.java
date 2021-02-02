@@ -20,4 +20,5 @@ public class ApiConstants {
 	public static final String GROUP = "/group";
 	public static final String MAPPING = "/mapping";
 	public static final String CNAME = "/cname";
+	public static final String CHILDREN = "/children";
 }
