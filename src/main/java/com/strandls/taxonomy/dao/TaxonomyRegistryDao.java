@@ -152,7 +152,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 					+ " case when nlevel(tR.path) > 1 THEN ltree2text(subpath(tR.path,-2,1)) else null end as parent, t.position "
 					+ " from taxonomy_definition as t, taxonomy_registry as tR"
 					+ " where t.id=tR.taxon_definition_id and t.is_deleted=false  and tR.classification_id=:classification_id and "
-					+ " t.rank='kingdom' " 
+					+ " nlevel(tR.path) < 3" 
 					+ " order by nlevel(tR.path), t.name";
 			query = session.createNativeQuery(queryString);
 		} else {
