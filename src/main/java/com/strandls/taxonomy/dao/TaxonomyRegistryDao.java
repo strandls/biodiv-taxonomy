@@ -6,6 +6,7 @@ package com.strandls.taxonomy.dao;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
@@ -20,7 +21,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.strandls.taxonomy.pojo.TaxonomyRegistry;
-import com.strandls.taxonomy.pojo.response.BreadCrumb;
 import com.strandls.taxonomy.util.AbstractDAO;
 
 /**
@@ -143,19 +143,59 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		return result;
 	}
 
-	public List<BreadCrumb> getImmediateChildsForTaxon(String nodePath) {
+	public List<Object[]> list(Long parent, List<Long> taxonIds, boolean expandTaxon) {
+		Session session = sessionFactory.openSession();
+		String queryString = "";
+		Query query;
+		if (parent == null && taxonIds == null) {
+			queryString = "select cast(t.id as varchar),t.name, t.rank, ltree2text(tR.path) as path, cast(tR.classification_id as varchar), "
+					+ " case when nlevel(tR.path) > 1 THEN ltree2text(subpath(tR.path,-2,1)) else null end as parent, t.position "
+					+ " from taxonomy_definition as t, taxonomy_registry as tR"
+					+ " where t.id=tR.taxon_definition_id and t.is_deleted=false  and tR.classification_id=:classification_id and "
+					+ " t.rank='kingdom' " 
+					+ " order by nlevel(tR.path), t.name";
+			query = session.createQuery(queryString);
+		} else {
+			String parentCheck = " ";
+			if (expandTaxon && taxonIds != null && !taxonIds.isEmpty()) {
+				List<String> allTaxonIds = getPathToRoot(taxonIds);
+				parentCheck = String.join("|", allTaxonIds);
+				parentCheck = "*." + parentCheck + ".*{0,1}";
+			} else if (parent != null) {
+				parentCheck = "*." + parent + ".*{0,1}";
+			}
+			queryString = "select cast(t.id as varchar),t.name, t.rank, ltree2text(tR.path) as path, cast(tR.classification_id as varchar), "
+					+ " case when nlevel(tR.path) > 1 THEN ltree2text(subpath(tR.path,-2,1)) else null end as parent, t.position "
+					+ " from taxonomy_definition as t, taxonomy_registry as tR"
+					+ " where t.id=tR.taxon_definition_id and t.is_deleted=false  and tR.classification_id=:classification_id and "
+					+ " tR.path ~ lquery(:parentCheck) " 
+					+ " order by nlevel(tR.path), t.name";
+			query = session.createNativeQuery(queryString);
+			query.setParameter("parentCheck", parentCheck);
+		}
+		query.setParameter("classification_id", CLASSIFICATION_ID);
 
-		// Search for the immediate child's of the given nodes
-		nodePath = nodePath + ".*{1}";
-		
-		String qry = "select td.id, td.name from (select taxon_definition_id from taxonomy_registry where path ~ lquery(:nodePath)) tr "
-				+ "inner join taxonomy_definition td on tr.taxon_definition_id = td.id";
-		
+		try {
+			return query.getResultList();
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+
+		return null;
+	}
+
+	public List<String> getPathToRoot(List<Long> taxonIds) {
 		Session session = sessionFactory.openSession();
 		try {
-			NativeQuery query = session.createNativeQuery(qry);
-			query.setParameter("nodePath", nodePath);
-			return query.getResultList();
+			String sqlString = "select cast(taxon_definition_id as varchar) from taxonomy_registry where path @> "
+					+ "any(select path from taxonomy_registry where taxon_definition_id in (:taxonIds)) and "
+					+ "classification_id=:classificationId";
+			Query query = session.createNativeQuery(sqlString);
+			query.setParameter("taxonIds", taxonIds);
+			query.setParameter("classificationId", CLASSIFICATION_ID);
+			return (List<String>) query.getResultList();
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		} finally {
@@ -163,5 +203,4 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		}
 		return null;
 	}
-
 }

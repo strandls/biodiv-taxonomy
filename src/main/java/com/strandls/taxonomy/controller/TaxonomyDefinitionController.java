@@ -8,12 +8,14 @@ import java.util.Map;
 
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
+import javax.transaction.Transactional;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
@@ -24,6 +26,7 @@ import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 
 import com.strandls.authentication_utility.filter.ValidateUser;
 import com.strandls.taxonomy.ApiConstants;
+import com.strandls.taxonomy.dao.TaxonomyDefinitionDao;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.pojo.request.FileMetadata;
 import com.strandls.taxonomy.pojo.request.TaxonomySave;
@@ -45,6 +48,9 @@ public class TaxonomyDefinitionController {
 
 	@Inject
 	private TaxonomyDefinitionSerivce taxonomyService;
+	
+	@Inject
+	private TaxonomyDefinitionDao taxonomyDefinitionDao;
 
 	@GET
 	@Path("/{taxonomyConceptId}")
@@ -108,6 +114,36 @@ public class TaxonomyDefinitionController {
 			return Response.status(Status.OK).entity(taxonomyDefinition).build();
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
+	}
+
+	@GET
+	@Path("/search")
+	@Produces(MediaType.APPLICATION_JSON)
+	@Transactional
+	public Response search(@QueryParam("term") String term) {
+		try {
+			Object name = taxonomyDefinitionDao.search(term);
+			return Response.status(Status.OK).entity(name).build();
+		}  catch (Exception e) {
+			throw new WebApplicationException(
+					Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
+		}
+
+	}
+
+	@GET
+	@Path("/retrieve/specificSearch")
+	@Produces(MediaType.APPLICATION_JSON)
+	@Transactional
+	public Response specificSearch(@QueryParam("term") String term,
+			@QueryParam("classification") Long classificationId, @QueryParam("taxonid") Long taxonid) {
+		try {
+			List<String> resultTaxonIds = taxonomyDefinitionDao.specificSearch(term, taxonid);
+			return Response.status(Status.OK).entity(resultTaxonIds).build();
+		}  catch (Exception e) {
+			throw new WebApplicationException(
+					Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
 	}
 }

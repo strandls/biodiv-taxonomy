@@ -5,12 +5,15 @@ import java.util.List;
 
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
+import javax.transaction.Transactional;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -19,6 +22,7 @@ import javax.ws.rs.core.Response.Status;
 import com.strandls.authentication_utility.filter.ValidateUser;
 import com.strandls.taxonomy.ApiConstants;
 import com.strandls.taxonomy.pojo.response.BreadCrumb;
+import com.strandls.taxonomy.pojo.response.TaxonRelation;
 import com.strandls.taxonomy.pojo.response.TaxonTree;
 import com.strandls.taxonomy.service.TaxonomyRegistryService;
 
@@ -81,23 +85,32 @@ public class TaxonomyRegistryController {
 		}
 	}
 	
+	/**
+	 * 
+	 * @param parent
+	 *            dummy
+	 * @param classificationId
+	 *            dummy
+	 * @param taxonIds
+	 *            dummy
+	 * @param expand_taxon
+	 *            dummy
+	 * @return dummy method is responsible for displaying taxon list
+	 */
 	@GET
-	@Path(ApiConstants.CHILDREN)
-	@Consumes(MediaType.TEXT_PLAIN)
+	@Path("/list")
+	@Transactional
 	@Produces(MediaType.APPLICATION_JSON)
-
-	@ApiOperation(value = "Find taxon Tree for a list of Taxons", notes = "Returns a List of Taxon Tree", response = TaxonTree.class, responseContainer = "List")
-	@ApiResponses(value = {
-			@ApiResponse(code = 400, message = "unable to fetch the taxon Tree", response = String.class) })
-
-	public Response getImmediateChildsForTaxon(@Context HttpServletRequest request,
-			@ApiParam(name = "nodePath") @QueryParam("nodePath") String nodePath) {
+	public Response list(@QueryParam("parent") Long parent,
+			@QueryParam("classification") Long classificationId, @QueryParam("taxonIds") String taxonIds,
+			@DefaultValue("false") @QueryParam("expand_taxon") Boolean expandTaxon) {
 		try {
-			List<BreadCrumb> result = taxonomyRegistry.getImmediateChildsForTaxon(nodePath);
+			List<TaxonRelation> result = taxonomyRegistry.list(parent, taxonIds, expandTaxon);
 			return Response.status(Status.OK).entity(result).build();
 
-		} catch (Exception e) {
-			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}  catch (Exception e) {
+			throw new WebApplicationException(
+					Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
 	}
 }

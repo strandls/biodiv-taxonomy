@@ -81,7 +81,43 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 				return new ArrayList<TaxonomyDefinition>();
 			}
 		}
-
 	}
 
+	public List<Object[]> search(String term) {
+		Session session = sessionFactory.openSession();
+		try {
+			String sqlString = "select t.name,t.status,t.position,t.id,t.rank from TaxonomyDefinition as t where lower(t.name) like :term order by t.name";
+			Query query = session.createQuery(sqlString);
+			query.setMaxResults(10);
+			query.setParameter("term", term.toLowerCase().trim() + '%');
+			return query.getResultList();
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return null;
+	}
+	
+	public List<String> specificSearch(String term, Long taxonId) {
+		Session session = sessionFactory.openSession();
+		try {
+			String sqlString = "select distinct(cast(case when t.status = 'SYNONYM' then a.accepted_id else t.id end as varchar)) as id" + 
+					" from (select * from taxonomy_definition where " + 
+					(taxonId != null ? " id=:taxonId and ": "") + 
+					" lower(name) like lower(:term)) t " + 
+					" left outer join accepted_synonym a " + 
+					" on t.id = a.synonym_id order by id ";
+			Query query = session.createNativeQuery(sqlString);
+			query.setParameter("term", term.toLowerCase().trim());
+			if(taxonId != null)
+				query.setParameter("taxonId", taxonId);
+			return query.getResultList();
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return null;
+	}
 }
