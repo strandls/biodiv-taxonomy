@@ -81,8 +81,11 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 
 	@Override
 	public List<TaxonRelation> list(Long parent, String taxonIds, boolean expandTaxon) {
-		List<Long> taxonID = new ArrayList<Long>();
-		if (taxonIds != null) {
+		List<Long> taxonID;
+		if(taxonIds == null || "".equals(taxonIds.trim())) {
+			taxonID = null;
+		} else {
+			taxonID = new ArrayList<Long>();
 			for (String taxon : taxonIds.split(","))
 				taxonID.add(Long.parseLong(taxon));
 		}
@@ -91,7 +94,7 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 			List<Object[]> taxonList = taxonomyRegistryDao.list(parent, taxonID, expandTaxon);
 			List<String> data = null;
 
-			if (taxonIds != null) {
+			if (taxonID != null) {
 				data = taxonomyRegistryDao.getPathToRoot(taxonID);
 			}
 

@@ -154,7 +154,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 					+ " where t.id=tR.taxon_definition_id and t.is_deleted=false  and tR.classification_id=:classification_id and "
 					+ " t.rank='kingdom' " 
 					+ " order by nlevel(tR.path), t.name";
-			query = session.createQuery(queryString);
+			query = session.createNativeQuery(queryString);
 		} else {
 			String parentCheck = " ";
 			if (expandTaxon && taxonIds != null && !taxonIds.isEmpty()) {
