@@ -160,7 +160,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 			if (expandTaxon && taxonIds != null && !taxonIds.isEmpty()) {
 				List<String> allTaxonIds = getPathToRoot(taxonIds);
 				parentCheck = String.join("|", allTaxonIds);
-				parentCheck = "*." + parentCheck + ".*{1}";
+				parentCheck = "*." + parentCheck + ".*{0,1}";
 			} else if (parent != null) {
 				parentCheck = "*." + parent + ".*{1}";
 			}
