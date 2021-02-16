@@ -31,6 +31,7 @@ public class TaxonomyDefinition {
 	private Long id;
 	private String binomialForm;
 	private String canonicalForm;
+	private String italicisedForm;
 	private Long externalLinksId;
 	private String name;
 	private String normalizedForm;
@@ -58,7 +59,7 @@ public class TaxonomyDefinition {
 		super();
 	}
 
-	public TaxonomyDefinition(Long id, String binomialForm, String canonicalForm, Long externalLinksId, String name,
+	public TaxonomyDefinition(Long id, String binomialForm, String canonicalForm, String italicisedForm, Long externalLinksId, String name,
 			String normalizedForm, String rank, Timestamp uploadTime, Long uploaderId, String status, String position,
 			String authorYear, String matchDatabaseName, String matchId, String ibpSource, String viaDatasource,
 			Boolean isFlagged, String relationship, String classs, String flaggingReason, Boolean isDeleted,
@@ -67,6 +68,7 @@ public class TaxonomyDefinition {
 		this.id = id;
 		this.binomialForm = binomialForm;
 		this.canonicalForm = canonicalForm;
+		this.italicisedForm = italicisedForm;
 		this.externalLinksId = externalLinksId;
 		this.name = name;
 		this.normalizedForm = normalizedForm;
@@ -120,6 +122,15 @@ public class TaxonomyDefinition {
 
 	public void setCanonicalForm(String canonicalForm) {
 		this.canonicalForm = canonicalForm;
+	}
+	
+	@Column(name = "italicised_form", nullable = false)
+	public String getItalicisedForm() {
+		return italicisedForm;
+	}
+	
+	public void setItalicisedForm(String italicisedForm) {
+		this.italicisedForm = italicisedForm;
 	}
 
 	@Column(name = "external_links_id", insertable = false, updatable = false)

@@ -203,4 +203,23 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		}
 		return null;
 	}
+
+	public List<Object[]> getHierarchy(Long taxonId) {
+		Session session = sessionFactory.openSession();
+		try {
+			String sqlString = "select td.id, td.rank, td.canonical_form from " 
+					+ " (select tr2.id, tr2.taxon_definition_id from taxonomy_registry tr1, taxonomy_registry tr2 "
+					+ " where tr1.taxon_definition_id = :taxonId and tr1.classification_id=:classificationId and tr1.path <@ tr2.path) tr" 
+					+ " inner join taxonomy_definition td on tr.taxon_definition_id = td.id";
+			Query query = session.createNativeQuery(sqlString);
+			query.setParameter("taxonId", taxonId);
+			query.setParameter("classificationId", CLASSIFICATION_ID);
+			return query.getResultList();
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return null;
+	}
 }

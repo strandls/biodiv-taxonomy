@@ -43,6 +43,8 @@ import com.strandls.taxonomy.pojo.request.TaxonomySave;
 import com.strandls.taxonomy.service.CommonNameSerivce;
 import com.strandls.taxonomy.service.RankSerivce;
 import com.strandls.taxonomy.service.TaxonomyDefinitionSerivce;
+import com.strandls.taxonomy.service.exception.TaxonCreationException;
+import com.strandls.taxonomy.service.exception.UnRecongnizedRankException;
 import com.strandls.taxonomy.util.AbstractService;
 import com.strandls.taxonomy.util.TaxonomyUtil;
 import com.strandls.utility.ApiException;
@@ -121,7 +123,12 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 	private TaxonomyDefinition addTaxonomyDefintionNodes(HttpServletRequest request, TaxonomySave taxonomySave)
 			throws ApiException {
-		Map<String, TaxonomyDefinition> createdTaxonomy = addNodes(request, taxonomySave);
+		Map<String, TaxonomyDefinition> createdTaxonomy;
+		try {
+			createdTaxonomy = addNodes(request, taxonomySave);
+		} catch (TaxonCreationException e) {
+			return null;
+		}
 
 		if (createdTaxonomy == null || createdTaxonomy.isEmpty())
 			return null;
@@ -130,13 +137,14 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	}
 
 	private Map<String, TaxonomyDefinition> addNodes(HttpServletRequest request, TaxonomySave taxonomySave)
-			throws ApiException {
+			throws ApiException, TaxonCreationException {
 
 		Map<String, TaxonomyDefinition> createdTaxonomy = new LinkedHashMap<String, TaxonomyDefinition>();
 
 		Map<String, String> constructedRanks = constructRanksForTheInput(request, taxonomySave, taxonomySave.getRank(),
 				taxonomySave.getScientificName());
-		TaxonomyCreationHierarchy taxonomyCreationHierarchy = getTaxonomyCreationHierarchy(constructedRanks);
+		TaxonomyCreationHierarchy taxonomyCreationHierarchy = getTaxonomyCreationHierarchy(constructedRanks,
+				taxonomySave);
 		Long matchedTaxonId = taxonomyCreationHierarchy.getMatchedTaxonId();
 		TaxonomyRegistry registry = taxonomyRegistryDao.findbyTaxonomyId(matchedTaxonId);
 		String parentPath = registry.getPath();
@@ -171,12 +179,19 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		String synonyms = taxonomySave.getSynonyms();
 		if (synonyms != null && !"".equals(synonyms.trim())
 				&& (acceptedTaxonomy != null && TaxonomyStatus.ACCEPTED.name().equals(acceptedTaxonomy.getStatus()))) {
-			String synonymRank = acceptedTaxonomy.getRank();
 			Long acceptedId = acceptedTaxonomy.getId();
+			String acceptedRank = acceptedTaxonomy.getRank();
 			for (String synonym : synonyms.split(";")) {
 				ParsedName parsedName = utilityServiceApi.getNameParsed(synonym);
+				String synonymRank;
+				try {
+					synonymRank = TaxonomyUtil.getRankForSynonym(parsedName, acceptedRank);
+				} catch (UnRecongnizedRankException e) {
+					// Dropping this synonym
+					continue;
+				}
 				TaxonomyDefinition synonymTaxonomy = findByCanonicalName(parsedName, synonymRank,
-						TaxonomyStatus.SYNONYM.name());
+						TaxonomyStatus.SYNONYM, taxonomySave);
 				if (synonymTaxonomy == null
 						|| TaxonomyStatus.ACCEPTED.name().equalsIgnoreCase(synonymTaxonomy.getStatus())) {
 					synonymTaxonomy = createTaxonomyDefiniiton(parsedName, synonymRank, TaxonomyStatus.SYNONYM,
@@ -204,8 +219,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		return createdTaxonomy;
 	}
 
-	private TaxonomyCreationHierarchy getTaxonomyCreationHierarchy(Map<String, String> constructedRanks)
-			throws ApiException {
+	private TaxonomyCreationHierarchy getTaxonomyCreationHierarchy(Map<String, String> constructedRanks,
+			TaxonomySave taxonomySave) throws ApiException, TaxonCreationException {
 		LinkedList<String> unmatchedRanks = new LinkedList<String>();
 		TaxonomyDefinition taxonomyDefinition = null;
 		Map<String, ParsedName> rankToParsedName = new HashMap<String, ParsedName>();
@@ -214,7 +229,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			String scientificName = entry.getValue();
 			ParsedName parsedName = utilityServiceApi.getNameParsed(scientificName);
 			rankToParsedName.put(rankName, parsedName);
-			taxonomyDefinition = findByCanonicalName(parsedName, rankName, TaxonomyStatus.ACCEPTED.name());
+			taxonomyDefinition = findByCanonicalName(parsedName, rankName, TaxonomyStatus.ACCEPTED,
+					taxonomySave);
 			if (taxonomyDefinition != null)
 				break;
 			unmatchedRanks.addFirst(rankName);
@@ -244,14 +260,18 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	}
 
 	private TaxonomyDefinition createTaxonomyDefiniiton(ParsedName parsedName, String rankName,
-			TaxonomyStatus taxonomyStatus, TaxonomyPosition taxonomyPosition, String source, String sourceId) {
+			TaxonomyStatus taxonomyStatus, TaxonomyPosition taxonomyPosition, String source, String sourceId)
+			throws TaxonCreationException {
+		if(parsedName == null || parsedName.getCanonicalName() == null)
+			throw new TaxonCreationException("Not valid name");
 		String canonicalName = parsedName.getCanonicalName().getFull();
 		String[] nameTokens = canonicalName.split(" ");
 		String binomialName;
 		if (nameTokens.length >= 2)
-			binomialName = nameTokens[0] + nameTokens[1];
+			binomialName = nameTokens[0] + " " + nameTokens[1];
 		else
 			binomialName = canonicalName;
+		String italicisedForm = TaxonomyUtil.getItalicisedForm(parsedName, rankName);
 		Timestamp uploadTime = new Timestamp(new Date().getTime());
 		Long uploaderId = UPLOADER_ID;
 		String status = taxonomyStatus.name();
@@ -261,6 +281,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		TaxonomyDefinition taxonomyDefinition = new TaxonomyDefinition();
 		taxonomyDefinition.setBinomialForm(binomialName);
 		taxonomyDefinition.setCanonicalForm(canonicalName);
+		taxonomyDefinition.setItalicisedForm(italicisedForm);
 		taxonomyDefinition.setName(parsedName.getVerbatim());
 		taxonomyDefinition.setNormalizedForm(parsedName.getNormalized());
 		taxonomyDefinition.setRank(rankName);
@@ -298,7 +319,11 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		return constructedRanks;
 	}
 
-	private TaxonomyDefinition findByCanonicalName(ParsedName parsedName, String rankName, String status) {
+	private TaxonomyDefinition findByCanonicalName(ParsedName parsedName, String rankName, TaxonomyStatus status,
+			TaxonomySave taxonomySave) throws ApiException {
+
+		if (parsedName == null || parsedName.getCanonicalName() == null)
+			return null;
 
 		String canonicalName = parsedName.getCanonicalName().getFull();
 		List<TaxonomyDefinition> taxonomyDefinitions = taxonomyDao.findByCanonicalForm(canonicalName, rankName);
@@ -306,14 +331,43 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		if (taxonomyDefinitions.isEmpty())
 			return null;
 
+		boolean isLeaf = TaxonomyStatus.SYNONYM.equals(status)
+				|| taxonomySave.getRank().equalsIgnoreCase(rankName);
+
 		String verbatim = parsedName.getVerbatim();
-		for (TaxonomyDefinition taxonomyDefinition : taxonomyDefinitions) {
-			if (!status.equalsIgnoreCase(taxonomyDefinition.getStatus()))
-				continue;
-			if (taxonomyDefinition.getName().equals(verbatim)) {
-				// TODO : check for the first three level if same return the taxonomy
-				return taxonomyDefinition;
+		if (isLeaf) {
+			for (TaxonomyDefinition taxonomyDefinition : taxonomyDefinitions) {
+				if (!status.name().equalsIgnoreCase(taxonomyDefinition.getStatus()))
+					continue;
+				if (taxonomyDefinition.getName().equals(verbatim))
+					return taxonomyDefinition;
 			}
+		} else {
+			Map<String, String> rankToName = taxonomySave.getRankToName();
+			rankToName.put("root", "Root");
+			Map<String, ParsedName> rankToParsedName = new HashMap<String, ParsedName>();
+			for (Map.Entry<String, String> entry : rankToName.entrySet()) {
+				String scientificName = entry.getValue();
+				ParsedName pName = utilityServiceApi.getNameParsed(scientificName);
+				rankToParsedName.put(entry.getKey(), pName);
+			}
+			int maxScore = 0;
+			TaxonomyDefinition matchedTaxonomy = null;
+			for (TaxonomyDefinition taxonomyDefinition : taxonomyDefinitions) {
+				List<Object[]> hierarchy = taxonomyRegistryDao.getHierarchy(taxonomyDefinition.getId());
+				int score = 0;
+				for (Object[] row : hierarchy) {
+					String rank = (String) row[1];
+					ParsedName inputParsedName = rankToParsedName.get(rank);
+					if (inputParsedName.getCanonicalName().getFull().equalsIgnoreCase((String) row[2]))
+						score++;
+				}
+				if (maxScore < score) {
+					maxScore = score;
+					matchedTaxonomy = taxonomyDefinition;
+				}
+			}
+			return matchedTaxonomy;
 		}
 
 		return null;
@@ -350,14 +404,14 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					if (taxonomyDefinition != null)
 						taxonIds.add(taxonomyDefinition.getId());
 					else {
-						// These taxonomy are not inserted. 
+						// These taxonomy are not inserted.
 						// 1. May be already exists
 						// 2. throws exception here
 					}
 				}
 			}
-			if(!taxonIds.isEmpty()) {
-				taxonomyESUpdate.pushUpdateToElastic(taxonIds);
+			if (!taxonIds.isEmpty()) {
+				// taxonomyESUpdate.pushUpdateToElastic(taxonIds);
 			}
 			reader.close();
 		}
