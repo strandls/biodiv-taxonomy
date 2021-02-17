@@ -28,7 +28,8 @@ public class TaxonomyUtil {
 	public static final String GENUS = "genus";
 	public static final String SUB_GENUS = "subgenus";
 	public static final String SPECIFIC_EPITHET = "specificEpithet";
-	public static final String INFRA_SPECIFIC_EPITHET = "infraspecificEpithets";
+	public static final String INFRA_SPECIFIC_EPITHETS = "infraspecificEpithets";
+	public static final String INFRA_SPECIFIC_EPITHET = "infraspecificEpithet";
 
 	private TaxonomyUtil() {
 
@@ -54,7 +55,7 @@ public class TaxonomyUtil {
 
 		if (details.get(0) instanceof LinkedHashMap) {
 			Map<String, Object> m = (Map<String, Object>) details.get(0);
-			if (m.containsKey(INFRA_SPECIFIC_EPITHET))
+			if (m.containsKey(INFRA_SPECIFIC_EPITHETS))
 				return INFRA_SPECIES;
 			else if (m.containsKey(SPECIFIC_EPITHET))
 				return SPECIES;
@@ -104,6 +105,7 @@ public class TaxonomyUtil {
 		italicisedForm = italicisedForm.replaceAll("</i>\\s*,\\s*<i>", ", ");
 		italicisedForm = italicisedForm.replaceAll("<i>\\s*</i>", " ");
 		italicisedForm = italicisedForm.replaceAll("<i>\\s*,\\s*</i>", ", ");
+		italicisedForm = italicisedForm.trim();
 
 		return italicisedForm;
 	}

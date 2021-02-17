@@ -282,7 +282,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		taxonomyDefinition.setBinomialForm(binomialName);
 		taxonomyDefinition.setCanonicalForm(canonicalName);
 		taxonomyDefinition.setItalicisedForm(italicisedForm);
-		taxonomyDefinition.setName(parsedName.getVerbatim());
+		taxonomyDefinition.setName(parsedName.getVerbatim().trim());
 		taxonomyDefinition.setNormalizedForm(parsedName.getNormalized());
 		taxonomyDefinition.setRank(rankName);
 		taxonomyDefinition.setUploadTime(uploadTime);
