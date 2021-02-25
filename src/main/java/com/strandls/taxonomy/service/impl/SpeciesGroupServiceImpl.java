@@ -67,5 +67,10 @@ public class SpeciesGroupServiceImpl extends AbstractService<SpeciesGroup> imple
 	public List<SpeciesPermission> getSpeciesPermissions(Long userId) {
 		return speciesPermissionDao.findByUserId(userId);
 	}
+	
+	@Override
+	public boolean checkPermission(Long userId, Long taxonId) {
+		return speciesPermissionDao.checkPermission(userId, taxonId);
+	}
 
 }

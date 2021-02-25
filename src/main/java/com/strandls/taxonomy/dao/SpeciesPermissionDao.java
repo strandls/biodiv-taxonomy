@@ -67,4 +67,9 @@ public class SpeciesPermissionDao extends AbstractDAO<SpeciesPermission, Long> {
 
 	}
 
+	public boolean checkPermission(Long userId, Long taxonId) {
+		
+		return false;
+	}
+
 }

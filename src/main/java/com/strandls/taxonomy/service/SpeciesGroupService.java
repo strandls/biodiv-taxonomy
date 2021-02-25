@@ -25,4 +25,6 @@ public interface SpeciesGroupService {
 
 	public SpeciesPermission save(SpeciesPermission speciesPermission);
 
+	public boolean checkPermission(Long userId, Long taxonId);
+
 }
