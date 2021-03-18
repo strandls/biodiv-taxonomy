@@ -9,6 +9,7 @@ import java.util.List;
 import javax.inject.Inject;
 
 import com.strandls.taxonomy.dao.AcceptedSynonymDao;
+import com.strandls.taxonomy.dao.CommonNamesDao;
 import com.strandls.taxonomy.dao.SpeciesGroupDao;
 import com.strandls.taxonomy.dao.SpeciesGroupMappingDao;
 import com.strandls.taxonomy.dao.SpeciesPermissionDao;
@@ -16,10 +17,12 @@ import com.strandls.taxonomy.dao.TaxonomyDefinitionDao;
 import com.strandls.taxonomy.dao.TaxonomyRegistryDao;
 import com.strandls.taxonomy.pojo.AcceptedSynonym;
 import com.strandls.taxonomy.pojo.BreadCrumb;
+import com.strandls.taxonomy.pojo.CommonNames;
 import com.strandls.taxonomy.pojo.SpeciesGroup;
 import com.strandls.taxonomy.pojo.SpeciesGroupMapping;
 import com.strandls.taxonomy.pojo.SpeciesPermission;
 import com.strandls.taxonomy.pojo.TaxonTree;
+import com.strandls.taxonomy.pojo.TaxonomicNames;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.pojo.TaxonomyRegistry;
 import com.strandls.taxonomy.service.TaxonomySerivce;
@@ -47,6 +50,9 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 
 	@Inject
 	private SpeciesPermissionDao speciesPermissionDao;
+
+	@Inject
+	private CommonNamesDao commonNamesDao;
 
 	@Override
 	public TaxonomyDefinition fetchById(Long id) {
@@ -127,6 +133,24 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 	public List<SpeciesPermission> getSpeciesPermissions(Long userId) {
 		List<SpeciesPermission> allowedTaxonList = speciesPermissionDao.findByUserId(userId);
 		return allowedTaxonList;
+	}
+
+	@Override
+	public TaxonomicNames findSynonymCommonName(Long taxonId) {
+
+		List<CommonNames> commonNames = commonNamesDao.findByTaxonId(taxonId);
+		List<AcceptedSynonym> acceptedSynonymsList = acceptedSynonymDao.findByAccepetdId(taxonId);
+		List<TaxonomyDefinition> synonymList = new ArrayList<TaxonomyDefinition>();
+		if (acceptedSynonymsList != null && !acceptedSynonymsList.isEmpty()) {
+			for (AcceptedSynonym synonym : acceptedSynonymsList) {
+				TaxonomyDefinition taxonomy = taxonomyDao.findById(synonym.getSynonymId());
+				synonymList.add(taxonomy);
+			}
+		}
+
+		TaxonomicNames result = new TaxonomicNames(commonNames, synonymList);
+		return result;
+
 	}
 
 }

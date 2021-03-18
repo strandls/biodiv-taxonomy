@@ -9,6 +9,7 @@ import com.strandls.taxonomy.pojo.BreadCrumb;
 import com.strandls.taxonomy.pojo.SpeciesGroup;
 import com.strandls.taxonomy.pojo.SpeciesPermission;
 import com.strandls.taxonomy.pojo.TaxonTree;
+import com.strandls.taxonomy.pojo.TaxonomicNames;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 
 /**
@@ -28,5 +29,7 @@ public interface TaxonomySerivce {
 	public List<TaxonTree> fetchTaxonTrees(List<Long> taxonList);
 
 	public List<SpeciesPermission> getSpeciesPermissions(Long userId);
+
+	public TaxonomicNames findSynonymCommonName(Long taxonId);
 
 }
