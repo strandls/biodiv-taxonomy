@@ -28,6 +28,7 @@ import com.strandls.taxonomy.pojo.BreadCrumb;
 import com.strandls.taxonomy.pojo.SpeciesGroup;
 import com.strandls.taxonomy.pojo.SpeciesPermission;
 import com.strandls.taxonomy.pojo.TaxonTree;
+import com.strandls.taxonomy.pojo.TaxonomicNames;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.service.TaxonomySerivce;
 
@@ -181,6 +182,24 @@ public class TaxonomyController {
 			return Response.status(Status.OK).entity(result).build();
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
+	}
+
+	@GET
+	@Path(ApiConstants.NAMES + "/{taxonomyId}")
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "get the common name and synonyms", notes = "return taxonoicNames based on taxonomyId", response = TaxonomicNames.class)
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to get the names", response = String.class) })
+
+	public Response getNames(@PathParam("taxonomyId") String taxonomyId) {
+		try {
+			Long taxonId = Long.parseLong(taxonomyId);
+			TaxonomicNames result = taxonomyService.findSynonymCommonName(taxonId);
+			return Response.status(Status.OK).entity(result).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_GATEWAY).entity(e.getMessage()).build();
 		}
 	}
 }
