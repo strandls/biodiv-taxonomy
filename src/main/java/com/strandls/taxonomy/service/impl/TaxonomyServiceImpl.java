@@ -157,8 +157,10 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 			List<CommonNames> commonNames = commonNamesDao.findByTaxonId(taxonId);
 
 			for (CommonNames commonName : commonNames) {
-				Language language = utilityService.fetchLanguageById(commonName.getLanguageId().toString());
-				commonName.setLanguage(language);
+				if (commonName.getLanguageId() != null) {
+					Language language = utilityService.fetchLanguageById(commonName.getLanguageId().toString());
+					commonName.setLanguage(language);
+				}
 			}
 
 			List<AcceptedSynonym> acceptedSynonymsList = acceptedSynonymDao.findByAccepetdId(taxonId);
