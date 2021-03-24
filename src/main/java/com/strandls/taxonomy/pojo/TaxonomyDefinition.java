@@ -25,6 +25,7 @@ public class TaxonomyDefinition {
 	private String status;
 	private Long speciesId;
 	private Long rank;
+	private Long groupId;
 
 	@Id
 	@GeneratedValue
@@ -72,7 +73,14 @@ public class TaxonomyDefinition {
 	public void setRank(Long rank) {
 		this.rank = rank;
 	}
-	
-	
+
+	@Column(name = "group_id")
+	public Long getGroupId() {
+		return groupId;
+	}
+
+	public void setGroupId(Long groupId) {
+		this.groupId = groupId;
+	}
 
 }

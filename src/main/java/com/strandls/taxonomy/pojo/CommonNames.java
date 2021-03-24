@@ -12,8 +12,10 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.strandls.utility.pojo.Language;
 
 /**
  * @author Abhishek Rudra
@@ -47,6 +49,7 @@ public class CommonNames implements Serializable {
 	private String lowercaseName;
 	private String nameSourceId;
 	private Boolean isDeleted;
+	private Language language;
 
 	/**
 	 * 
@@ -251,6 +254,15 @@ public class CommonNames implements Serializable {
 
 	public void setIsDeleted(Boolean isDeleted) {
 		this.isDeleted = isDeleted;
+	}
+
+	@Transient
+	public Language getLanguage() {
+		return language;
+	}
+
+	public void setLanguage(Language language) {
+		this.language = language;
 	}
 
 }

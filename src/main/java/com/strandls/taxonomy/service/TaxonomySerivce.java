@@ -5,7 +5,11 @@ package com.strandls.taxonomy.service;
 
 import java.util.List;
 
+import javax.servlet.http.HttpServletRequest;
+
 import com.strandls.taxonomy.pojo.BreadCrumb;
+import com.strandls.taxonomy.pojo.CommonNames;
+import com.strandls.taxonomy.pojo.CommonNamesData;
 import com.strandls.taxonomy.pojo.SpeciesGroup;
 import com.strandls.taxonomy.pojo.SpeciesPermission;
 import com.strandls.taxonomy.pojo.TaxonTree;
@@ -33,4 +37,9 @@ public interface TaxonomySerivce {
 	public List<SpeciesPermission> getSpeciesPermissions(Long userId);
 
 	public TaxonomicNames findSynonymCommonName(Long taxonId);
+
+	public List<CommonNames> updateAddCommonName(HttpServletRequest request, CommonNamesData commonNamesData);
+
+	public Boolean removeCommonName(HttpServletRequest request, Long commonNameId);
+
 }

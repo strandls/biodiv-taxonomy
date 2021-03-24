@@ -9,7 +9,9 @@ import java.util.List;
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -25,6 +27,8 @@ import com.strandls.authentication_utility.filter.ValidateUser;
 import com.strandls.authentication_utility.util.AuthUtil;
 import com.strandls.taxonomy.ApiConstants;
 import com.strandls.taxonomy.pojo.BreadCrumb;
+import com.strandls.taxonomy.pojo.CommonNames;
+import com.strandls.taxonomy.pojo.CommonNamesData;
 import com.strandls.taxonomy.pojo.SpeciesGroup;
 import com.strandls.taxonomy.pojo.SpeciesPermission;
 import com.strandls.taxonomy.pojo.TaxonTree;
@@ -202,4 +206,50 @@ public class TaxonomyController {
 			return Response.status(Status.BAD_GATEWAY).entity(e.getMessage()).build();
 		}
 	}
+
+	@PUT
+	@Path(ApiConstants.UPDATE + ApiConstants.COMMONNAME)
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ValidateUser
+
+	@ApiOperation(value = "update add the commonName", notes = "Returns the new list of commonName", response = CommonNames.class, responseContainer = "List")
+	@ApiResponses(value = {
+			@ApiResponse(code = 400, message = "unable to update the commonName", response = String.class) })
+
+	public Response updateAddCommonNames(@Context HttpServletRequest request,
+			@ApiParam(name = "commonNameData") CommonNamesData commonNamesData) {
+		try {
+			List<CommonNames> result = taxonomyService.updateAddCommonName(request, commonNamesData);
+			return Response.status(Status.OK).entity(result).build();
+
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
+	}
+
+	@DELETE
+	@Path(ApiConstants.REMOVE + ApiConstants.COMMONNAME + "/{commonNameId}")
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ValidateUser
+
+	@ApiOperation(value = "remove the commonName", notes = "Returns the Boolean values", response = Boolean.class)
+	@ApiResponses(value = {
+			@ApiResponse(code = 400, message = "unable to remove the commonName", response = String.class) })
+
+	public Response removeCommonName(@Context HttpServletRequest request,
+			@PathParam("commonNameId") String commonNameId) {
+		try {
+			Long cnId = Long.parseLong(commonNameId);
+			Boolean result = taxonomyService.removeCommonName(request, cnId);
+			return Response.status(Status.OK).entity(result).build();
+
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
+	}
+
 }
