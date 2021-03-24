@@ -4,10 +4,17 @@
 package com.strandls.taxonomy.service.impl;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
 
+import org.pac4j.core.profile.CommonProfile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.strandls.authentication_utility.util.AuthUtil;
 import com.strandls.taxonomy.dao.AcceptedSynonymDao;
 import com.strandls.taxonomy.dao.CommonNamesDao;
 import com.strandls.taxonomy.dao.SpeciesGroupDao;
@@ -18,6 +25,7 @@ import com.strandls.taxonomy.dao.TaxonomyRegistryDao;
 import com.strandls.taxonomy.pojo.AcceptedSynonym;
 import com.strandls.taxonomy.pojo.BreadCrumb;
 import com.strandls.taxonomy.pojo.CommonNames;
+import com.strandls.taxonomy.pojo.CommonNamesData;
 import com.strandls.taxonomy.pojo.SpeciesGroup;
 import com.strandls.taxonomy.pojo.SpeciesGroupMapping;
 import com.strandls.taxonomy.pojo.SpeciesPermission;
@@ -26,6 +34,8 @@ import com.strandls.taxonomy.pojo.TaxonomicNames;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.pojo.TaxonomyRegistry;
 import com.strandls.taxonomy.service.TaxonomySerivce;
+import com.strandls.utility.controller.UtilityServiceApi;
+import com.strandls.utility.pojo.Language;
 
 /**
  * @author Abhishek Rudra
@@ -53,6 +63,11 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 
 	@Inject
 	private CommonNamesDao commonNamesDao;
+
+	@Inject
+	private UtilityServiceApi utilityService;
+
+	private final Logger logger = LoggerFactory.getLogger(TaxonomyServiceImpl.class);
 
 	@Override
 	public TaxonomyDefinition fetchById(Long id) {
@@ -138,19 +153,67 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 	@Override
 	public TaxonomicNames findSynonymCommonName(Long taxonId) {
 
-		List<CommonNames> commonNames = commonNamesDao.findByTaxonId(taxonId);
-		List<AcceptedSynonym> acceptedSynonymsList = acceptedSynonymDao.findByAccepetdId(taxonId);
-		List<TaxonomyDefinition> synonymList = new ArrayList<TaxonomyDefinition>();
-		if (acceptedSynonymsList != null && !acceptedSynonymsList.isEmpty()) {
-			for (AcceptedSynonym synonym : acceptedSynonymsList) {
-				TaxonomyDefinition taxonomy = taxonomyDao.findById(synonym.getSynonymId());
-				synonymList.add(taxonomy);
+		try {
+			List<CommonNames> commonNames = commonNamesDao.findByTaxonId(taxonId);
+
+			for (CommonNames commonName : commonNames) {
+				Language language = utilityService.fetchLanguageById(commonName.getLanguageId().toString());
+				commonName.setLanguage(language);
 			}
+
+			List<AcceptedSynonym> acceptedSynonymsList = acceptedSynonymDao.findByAccepetdId(taxonId);
+			List<TaxonomyDefinition> synonymList = new ArrayList<TaxonomyDefinition>();
+			if (acceptedSynonymsList != null && !acceptedSynonymsList.isEmpty()) {
+				for (AcceptedSynonym synonym : acceptedSynonymsList) {
+					TaxonomyDefinition taxonomy = taxonomyDao.findById(synonym.getSynonymId());
+					synonymList.add(taxonomy);
+				}
+			}
+
+			TaxonomicNames result = new TaxonomicNames(commonNames, synonymList);
+			return result;
+
+		} catch (Exception e) {
+			logger.error(e.getMessage());
 		}
+		return null;
 
-		TaxonomicNames result = new TaxonomicNames(commonNames, synonymList);
+	}
+
+	@Override
+	public List<CommonNames> updateAddCommonName(HttpServletRequest request, CommonNamesData commonNamesData) {
+
+		CommonProfile profile = AuthUtil.getProfileFromRequest(request);
+		Long uploaderId = Long.parseLong(profile.getId());
+		if (commonNamesData.getName() == null || commonNamesData.getTaxonConceptId() == null)
+			return null;
+		if (commonNamesData.getId() == null) {
+			CommonNames commonNames = new CommonNames(null, commonNamesData.getLanguageId(), commonNamesData.getName(),
+					commonNamesData.getTaxonConceptId(), new Date(), uploaderId, null, "COMMON", "RAW", null, null,
+					null, null, null, commonNamesData.getName().toLowerCase(), null, false);
+			commonNamesDao.save(commonNames);
+		} else {
+			CommonNames commonName = commonNamesDao.findById(commonNamesData.getId());
+			if (commonName.getTaxonConceptId() != commonNamesData.getTaxonConceptId())
+				return null;
+			commonName.setName(commonNamesData.getName());
+			commonName.setLowercaseName(commonNamesData.getName().toLowerCase());
+			if (commonNamesData.getLanguageId() != null)
+				commonName.setLanguageId(commonNamesData.getLanguageId());
+
+			commonNamesDao.update(commonName);
+		}
+		List<CommonNames> result = commonNamesDao.findByTaxonId(commonNamesData.getTaxonConceptId());
 		return result;
+	}
 
+	@Override
+	public Boolean removeCommonName(HttpServletRequest request, Long commonNameId) {
+		CommonNames commonName = commonNamesDao.findById(commonNameId);
+		commonName = commonNamesDao.delete(commonName);
+		if (commonName != null)
+			return true;
+		return false;
 	}
 
 }

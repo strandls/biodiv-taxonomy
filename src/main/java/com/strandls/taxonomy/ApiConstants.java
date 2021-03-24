@@ -15,4 +15,7 @@ public class ApiConstants {
 	public static final String SPECIES = "/species";
 	public static final String PERMISSION = "/permission";
 	public static final String NAMES = "/names";
+	public static final String UPDATE = "/update";
+	public static final String COMMONNAME = "/commoName";
+	public static final String REMOVE = "/remove";
 }

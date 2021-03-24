@@ -49,7 +49,7 @@ public class CommonNamesDao extends AbstractDAO<CommonNames, Long> {
 
 	@SuppressWarnings("unchecked")
 	public List<CommonNames> findByTaxonId(Long taxonId) {
-		String qry = "from CommonNames where taxonConceptId = :taxonId ";
+		String qry = "from CommonNames where taxonConceptId = :taxonId and isDeleted = false";
 		Session session = sessionFactory.openSession();
 		List<CommonNames> result = null;
 		try {

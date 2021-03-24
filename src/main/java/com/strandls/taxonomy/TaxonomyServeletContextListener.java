@@ -36,6 +36,7 @@ import com.google.inject.servlet.ServletModule;
 import com.strandls.taxonomy.controller.TaxonomyControllerModule;
 import com.strandls.taxonomy.dao.TaxonomyDaoModule;
 import com.strandls.taxonomy.service.impl.TaxonomyServiceModule;
+import com.strandls.utility.controller.UtilityServiceApi;
 
 /**
  * @author Abhishek Rudra
@@ -72,8 +73,9 @@ public class TaxonomyServeletContextListener extends GuiceServletContextListener
 				props.put("jersey.config.server.wadl.disableWadl", "true");
 
 				bind(SessionFactory.class).toInstance(sessionFactory);
-				bind(ServletContainer.class).in(Scopes.SINGLETON);
+				bind(UtilityServiceApi.class).in(Scopes.SINGLETON);
 
+				bind(ServletContainer.class).in(Scopes.SINGLETON);
 				serve("/api/*").with(ServletContainer.class, props);
 			}
 		}, new TaxonomyControllerModule(), new TaxonomyServiceModule(), new TaxonomyDaoModule());
