@@ -202,7 +202,7 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 			commonNamesDao.save(commonNames);
 		} else {
 			CommonNames commonName = commonNamesDao.findById(commonNamesData.getId());
-			if (commonName.getTaxonConceptId().equals(commonNamesData.getTaxonConceptId()))
+			if (!commonName.getTaxonConceptId().equals(commonNamesData.getTaxonConceptId()))
 				return null;
 			commonName.setName(commonNamesData.getName());
 			commonName.setLowercaseName(commonNamesData.getName().toLowerCase());
