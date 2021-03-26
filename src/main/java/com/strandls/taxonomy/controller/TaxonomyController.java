@@ -219,7 +219,7 @@ public class TaxonomyController {
 
 	@ValidateUser
 
-	@ApiOperation(value = "remove the commonName", notes = "Returns the Boolean values", response = Boolean.class)
+	@ApiOperation(value = "remove the commonName", notes = "Returns the Boolean values", response = CommonNames.class, responseContainer = "List")
 	@ApiResponses(value = {
 			@ApiResponse(code = 400, message = "unable to remove the commonName", response = String.class) })
 
@@ -227,7 +227,7 @@ public class TaxonomyController {
 			@PathParam("commonNameId") String commonNameId) {
 		try {
 			Long cnId = Long.parseLong(commonNameId);
-			Boolean result = taxonomyService.removeCommonName(request, cnId);
+			List<CommonNames> result = taxonomyService.removeCommonName(request, cnId);
 			return Response.status(Status.OK).entity(result).build();
 
 		} catch (Exception e) {

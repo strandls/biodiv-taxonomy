@@ -185,37 +185,61 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 	@Override
 	public List<CommonNames> updateAddCommonName(HttpServletRequest request, CommonNamesData commonNamesData) {
 
-		CommonProfile profile = AuthUtil.getProfileFromRequest(request);
-		Long uploaderId = Long.parseLong(profile.getId());
-		if (commonNamesData.getName() == null || commonNamesData.getTaxonConceptId() == null)
-			return null;
-		if (commonNamesData.getId() == null) {
-			CommonNames commonNames = new CommonNames(null, commonNamesData.getLanguageId(), commonNamesData.getName(),
-					commonNamesData.getTaxonConceptId(), new Date(), uploaderId, null, "COMMON", "RAW", null, null,
-					null, null, null, commonNamesData.getName().toLowerCase(), null, false);
-			commonNamesDao.save(commonNames);
-		} else {
-			CommonNames commonName = commonNamesDao.findById(commonNamesData.getId());
-			if (!commonName.getTaxonConceptId().equals(commonNamesData.getTaxonConceptId()))
+		try {
+			CommonProfile profile = AuthUtil.getProfileFromRequest(request);
+			Long uploaderId = Long.parseLong(profile.getId());
+			if (commonNamesData.getName() == null || commonNamesData.getTaxonConceptId() == null)
 				return null;
-			commonName.setName(commonNamesData.getName());
-			commonName.setLowercaseName(commonNamesData.getName().toLowerCase());
-			if (commonNamesData.getLanguageId() != null)
-				commonName.setLanguageId(commonNamesData.getLanguageId());
+			if (commonNamesData.getId() == null) {
+				CommonNames commonNames = new CommonNames(null, commonNamesData.getLanguageId(),
+						commonNamesData.getName(), commonNamesData.getTaxonConceptId(), new Date(), uploaderId, null,
+						"COMMON", "RAW", null, null, null, null, null, commonNamesData.getName().toLowerCase(), null,
+						false);
+				commonNamesDao.save(commonNames);
+			} else {
+				CommonNames commonName = commonNamesDao.findById(commonNamesData.getId());
+				if (!commonName.getTaxonConceptId().equals(commonNamesData.getTaxonConceptId()))
+					return null;
+				commonName.setName(commonNamesData.getName());
+				commonName.setLowercaseName(commonNamesData.getName().toLowerCase());
+				if (commonNamesData.getLanguageId() != null)
+					commonName.setLanguageId(commonNamesData.getLanguageId());
 
-			commonNamesDao.update(commonName);
+				commonNamesDao.update(commonName);
+			}
+			List<CommonNames> result = commonNamesDao.findByTaxonId(commonNamesData.getTaxonConceptId());
+			for (CommonNames commonName : result) {
+				if (commonName.getLanguageId() != null) {
+					Language language = utilityService.fetchLanguageById(commonName.getLanguageId().toString());
+					commonName.setLanguage(language);
+				}
+			}
+			return result;
+
+		} catch (Exception e) {
+			logger.error(e.getMessage());
 		}
-		List<CommonNames> result = commonNamesDao.findByTaxonId(commonNamesData.getTaxonConceptId());
-		return result;
+		return null;
+
 	}
 
 	@Override
-	public Boolean removeCommonName(HttpServletRequest request, Long commonNameId) {
-		CommonNames commonName = commonNamesDao.findById(commonNameId);
-		commonName = commonNamesDao.delete(commonName);
-		if (commonName != null)
-			return true;
-		return false;
+	public List<CommonNames> removeCommonName(HttpServletRequest request, Long commonNameId) {
+		try {
+			CommonNames commonName = commonNamesDao.findById(commonNameId);
+			commonName = commonNamesDao.delete(commonName);
+			List<CommonNames> result = commonNamesDao.findByTaxonId(commonName.getTaxonConceptId());
+			for (CommonNames commonNames : result) {
+				if (commonName.getLanguageId() != null) {
+					Language language = utilityService.fetchLanguageById(commonNames.getLanguageId().toString());
+					commonName.setLanguage(language);
+				}
+			}
+			return result;
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		}
+		return null;
 	}
 
 }

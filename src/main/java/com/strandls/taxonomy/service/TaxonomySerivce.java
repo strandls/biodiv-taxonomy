@@ -38,6 +38,6 @@ public interface TaxonomySerivce {
 
 	public List<CommonNames> updateAddCommonName(HttpServletRequest request, CommonNamesData commonNamesData);
 
-	public Boolean removeCommonName(HttpServletRequest request, Long commonNameId);
+	public List<CommonNames> removeCommonName(HttpServletRequest request, Long commonNameId);
 
 }
