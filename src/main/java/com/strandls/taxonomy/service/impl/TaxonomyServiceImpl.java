@@ -230,9 +230,9 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 			commonName = commonNamesDao.delete(commonName);
 			List<CommonNames> result = commonNamesDao.findByTaxonId(commonName.getTaxonConceptId());
 			for (CommonNames commonNames : result) {
-				if (commonName.getLanguageId() != null) {
+				if (commonNames.getLanguageId() != null) {
 					Language language = utilityService.fetchLanguageById(commonNames.getLanguageId().toString());
-					commonName.setLanguage(language);
+					commonNames.setLanguage(language);
 				}
 			}
 			return result;
