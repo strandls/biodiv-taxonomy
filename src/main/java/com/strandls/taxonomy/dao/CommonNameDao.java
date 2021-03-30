@@ -55,7 +55,7 @@ public class CommonNameDao extends AbstractDAO<CommonName, Long> {
 					+ (languageId == null ? "languageId is NULL" : "languageId = :languageId")
 					+ " and taxonConceptId =:taxonConceptId and name =:name and isDeleted = false";
 			Query<CommonName> query = session.createQuery(queryStr, CommonName.class);
-			if(languageId != null)
+			if (languageId != null)
 				query.setParameter("languageId", languageId);
 			query.setParameter("taxonConceptId", taxonConceptId);
 			query.setParameter("name", commonNameString);
@@ -64,4 +64,23 @@ public class CommonNameDao extends AbstractDAO<CommonName, Long> {
 			return new ArrayList<CommonName>();
 		}
 	}
+
+	@SuppressWarnings("unchecked")
+	public List<CommonName> findByTaxonId(Long taxonId) {
+		String qry = "from CommonNames where taxonConceptId = :taxonId and isDeleted = false";
+		Session session = sessionFactory.openSession();
+		List<CommonName> result = null;
+		try {
+			Query<CommonName> query = session.createQuery(qry);
+			query.setParameter("taxonId", taxonId);
+			result = query.getResultList();
+
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return result;
+	}
+
 }

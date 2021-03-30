@@ -25,6 +25,8 @@ import javax.ws.rs.core.Response;
 
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opencsv.CSVReader;
@@ -32,7 +34,9 @@ import com.strandls.taxonomy.dao.AcceptedSynonymDao;
 import com.strandls.taxonomy.dao.TaxonomyDefinitionDao;
 import com.strandls.taxonomy.dao.TaxonomyRegistryDao;
 import com.strandls.taxonomy.pojo.AcceptedSynonym;
+import com.strandls.taxonomy.pojo.CommonName;
 import com.strandls.taxonomy.pojo.Rank;
+import com.strandls.taxonomy.pojo.TaxonomicNames;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.pojo.TaxonomyRegistry;
 import com.strandls.taxonomy.pojo.enumtype.TaxonomyPosition;
@@ -82,6 +86,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 	@Inject
 	private ObjectMapper objectMapper;
+
+	private final Logger logger = LoggerFactory.getLogger(TaxonomyDefinitionServiceImpl.class);
 
 	static final Long UPLOADER_ID = 1L;
 
@@ -229,8 +235,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			String scientificName = entry.getValue();
 			ParsedName parsedName = utilityServiceApi.getNameParsed(scientificName);
 			rankToParsedName.put(rankName, parsedName);
-			taxonomyDefinition = findByCanonicalName(parsedName, rankName, TaxonomyStatus.ACCEPTED,
-					taxonomySave);
+			taxonomyDefinition = findByCanonicalName(parsedName, rankName, TaxonomyStatus.ACCEPTED, taxonomySave);
 			if (taxonomyDefinition != null)
 				break;
 			unmatchedRanks.addFirst(rankName);
@@ -262,7 +267,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	private TaxonomyDefinition createTaxonomyDefiniiton(ParsedName parsedName, String rankName,
 			TaxonomyStatus taxonomyStatus, TaxonomyPosition taxonomyPosition, String source, String sourceId)
 			throws TaxonCreationException {
-		if(parsedName == null || parsedName.getCanonicalName() == null)
+		if (parsedName == null || parsedName.getCanonicalName() == null)
 			throw new TaxonCreationException("Not valid name");
 		String canonicalName = parsedName.getCanonicalName().getFull();
 		String[] nameTokens = canonicalName.split(" ");
@@ -331,8 +336,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		if (taxonomyDefinitions.isEmpty())
 			return null;
 
-		boolean isLeaf = TaxonomyStatus.SYNONYM.equals(status)
-				|| taxonomySave.getRank().equalsIgnoreCase(rankName);
+		boolean isLeaf = TaxonomyStatus.SYNONYM.equals(status) || taxonomySave.getRank().equalsIgnoreCase(rankName);
 
 		String verbatim = parsedName.getVerbatim();
 		if (isLeaf) {
@@ -418,5 +422,30 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		Long endTime = System.currentTimeMillis();
 		System.out.println("Total time : " + (endTime - startTime));
 		return null;
+	}
+
+	@Override
+	public TaxonomicNames findSynonymCommonName(Long taxonId) {
+
+		try {
+			List<CommonName> commonNames = commonNameSerivce.fetchByTaxonId(taxonId);
+
+			List<AcceptedSynonym> acceptedSynonymsList = acceptedSynonymDao.findByAccepetdId(taxonId);
+			List<TaxonomyDefinition> synonymList = new ArrayList<TaxonomyDefinition>();
+			if (acceptedSynonymsList != null && !acceptedSynonymsList.isEmpty()) {
+				for (AcceptedSynonym synonym : acceptedSynonymsList) {
+					TaxonomyDefinition taxonomy = taxonomyDao.findById(synonym.getSynonymId());
+					synonymList.add(taxonomy);
+				}
+			}
+
+			TaxonomicNames result = new TaxonomicNames(commonNames, synonymList);
+			return result;
+
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		}
+		return null;
+
 	}
 }

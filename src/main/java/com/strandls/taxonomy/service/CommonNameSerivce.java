@@ -6,7 +6,10 @@ package com.strandls.taxonomy.service;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletRequest;
+
 import com.strandls.taxonomy.pojo.CommonName;
+import com.strandls.taxonomy.pojo.CommonNamesData;
 
 /**
  * 
@@ -23,6 +26,13 @@ public interface CommonNameSerivce {
 
 	public CommonName updateIsPreffered(Long id);
 
-	public List<CommonName> addCommonNames(Long taxonConceptId, Map<Long, String[]> languageIdToCommonNames, String source);
+	public List<CommonName> addCommonNames(Long taxonConceptId, Map<Long, String[]> languageIdToCommonNames,
+			String source);
+
+	public List<CommonName> updateAddCommonName(HttpServletRequest request, CommonNamesData commonNamesData);
+
+	public List<CommonName> removeCommonName(HttpServletRequest request, Long commonNameId);
+
+	public List<CommonName> fetchByTaxonId(Long taxonId);
 
 }

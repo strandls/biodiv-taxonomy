@@ -1,6 +1,6 @@
 package com.strandls.taxonomy.pojo;
 
-import java.sql.Timestamp;
+import java.util.Date;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -9,8 +9,10 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.strandls.utility.pojo.Language;
 
 /**
  * 
@@ -27,18 +29,31 @@ public class CommonName {
 	private Long languageId;
 	private String name;
 	private Long taxonConceptId;
-	private Timestamp uploadTime;
+	private Date uploadTime;
 	private Long uploaderId;
 	private String transliteration;
 	private boolean isPreffered;
 	private String viaDatasource;
 	private Boolean isDeleted;
+	private Language language;
 
 	public CommonName() {
 		super();
 	}
 
-	public CommonName(Long id, Long languageId, String name, Long taxonConceptId, Timestamp uploadTime, Long uploaderId,
+	/**
+	 * @param id
+	 * @param languageId
+	 * @param name
+	 * @param taxonConceptId
+	 * @param uploadTime
+	 * @param uploaderId
+	 * @param transliteration
+	 * @param isPreffered
+	 * @param viaDatasource
+	 * @param isDeleted
+	 */
+	public CommonName(Long id, Long languageId, String name, Long taxonConceptId, Date uploadTime, Long uploaderId,
 			String transliteration, boolean isPreffered, String viaDatasource, Boolean isDeleted) {
 		super();
 		this.id = id;
@@ -93,11 +108,11 @@ public class CommonName {
 	}
 
 	@Column(name = "upload_time")
-	public Timestamp getUploadTime() {
+	public Date getUploadTime() {
 		return uploadTime;
 	}
 
-	public void setUploadTime(Timestamp uploadTime) {
+	public void setUploadTime(Date uploadTime) {
 		this.uploadTime = uploadTime;
 	}
 
@@ -145,4 +160,14 @@ public class CommonName {
 	public void setIsDeleted(Boolean isDeleted) {
 		this.isDeleted = isDeleted;
 	}
+
+	@Transient
+	public Language getLanguage() {
+		return language;
+	}
+
+	public void setLanguage(Language language) {
+		this.language = language;
+	}
+
 }
