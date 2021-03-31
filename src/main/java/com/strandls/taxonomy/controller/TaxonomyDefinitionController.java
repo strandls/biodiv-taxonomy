@@ -48,7 +48,7 @@ public class TaxonomyDefinitionController {
 
 	@Inject
 	private TaxonomyDefinitionSerivce taxonomyService;
-	
+
 	@Inject
 	private TaxonomyDefinitionDao taxonomyDefinitionDao;
 
@@ -69,7 +69,7 @@ public class TaxonomyDefinitionController {
 			return Response.status(Status.BAD_REQUEST).build();
 		}
 	}
-	
+
 	@Path("upload")
 	@POST
 	@Consumes({ MediaType.MULTIPART_FORM_DATA })
@@ -93,8 +93,10 @@ public class TaxonomyDefinitionController {
 	@Produces(MediaType.APPLICATION_JSON)
 	@ValidateUser
 	@ApiOperation(value = "save the taxonomy list", notes = "return the saved taxonomy", response = TaxonomyDefinition.class, responseContainer = "List")
-	@ApiResponses(value = { @ApiResponse(code = 400, message = "failed to save the taxon definition", response = String.class) })
-	public Response saveTaxonomyList(@Context HttpServletRequest request, @ApiParam("taxonomyList") List<TaxonomySave> taxonomyList) {
+	@ApiResponses(value = {
+			@ApiResponse(code = 400, message = "failed to save the taxon definition", response = String.class) })
+	public Response saveTaxonomyList(@Context HttpServletRequest request,
+			@ApiParam("taxonomyList") List<TaxonomySave> taxonomyList) {
 		try {
 			List<TaxonomyDefinition> taxonomyDefinition = taxonomyService.saveList(request, taxonomyList);
 			return Response.status(Status.OK).entity(taxonomyDefinition).build();
@@ -102,13 +104,15 @@ public class TaxonomyDefinitionController {
 			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
 		}
 	}
-	
+
 	@POST
 	@Produces(MediaType.APPLICATION_JSON)
 	@ValidateUser
 	@ApiOperation(value = "save the taxonomy", notes = "return the saved taxonomy", response = TaxonomyDefinition.class)
-	@ApiResponses(value = { @ApiResponse(code = 400, message = "failed to save the taxon definition", response = String.class) })
-	public Response saveTaxonomy(@Context HttpServletRequest request, @ApiParam("taxonSave") TaxonomySave taxonomySave) {
+	@ApiResponses(value = {
+			@ApiResponse(code = 400, message = "failed to save the taxon definition", response = String.class) })
+	public Response saveTaxonomy(@Context HttpServletRequest request,
+			@ApiParam("taxonSave") TaxonomySave taxonomySave) {
 		try {
 			TaxonomyDefinition taxonomyDefinition = taxonomyService.save(request, taxonomySave);
 			return Response.status(Status.OK).entity(taxonomyDefinition).build();
@@ -118,14 +122,35 @@ public class TaxonomyDefinitionController {
 	}
 
 	@GET
+	@Path("/canonicalForm")
+	@Produces(MediaType.APPLICATION_JSON)
+	@ApiOperation(value = "Get taxonomy based on the canonical name and rank", notes = "return the found taxonomy", response = TaxonomyDefinition.class)
+	@ApiResponses(value = {
+			@ApiResponse(code = 400, message = "failed to get the taxon definition", response = String.class) })
+	public Response getByCanonicalForm(@QueryParam("canonicalForm") String canonicalForm,
+			@QueryParam("rankName") String rankName) {
+		try {
+			List<TaxonomyDefinition> taxonomyDefinitions = taxonomyDefinitionDao.findByCanonicalForm(canonicalForm,
+					rankName);
+			return Response.status(Status.OK).entity(taxonomyDefinitions).build();
+		} catch (Exception e) {
+			throw new WebApplicationException(
+					Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
+		}
+	}
+
+	@GET
 	@Path("/search")
 	@Produces(MediaType.APPLICATION_JSON)
 	@Transactional
+	@ApiOperation(value = "Search taxonomy based on the name", notes = "return the found taxonomy", response = Object.class)
+	@ApiResponses(value = {
+			@ApiResponse(code = 400, message = "failed to get the taxon definition", response = String.class) })
 	public Response search(@QueryParam("term") String term) {
 		try {
 			Object name = taxonomyDefinitionDao.search(term);
 			return Response.status(Status.OK).entity(name).build();
-		}  catch (Exception e) {
+		} catch (Exception e) {
 			throw new WebApplicationException(
 					Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
@@ -136,12 +161,12 @@ public class TaxonomyDefinitionController {
 	@Path("/retrieve/specificSearch")
 	@Produces(MediaType.APPLICATION_JSON)
 	@Transactional
-	public Response specificSearch(@QueryParam("term") String term,
-			@QueryParam("classification") Long classificationId, @QueryParam("taxonid") Long taxonid) {
+	public Response specificSearch(@QueryParam("term") String term, @QueryParam("classification") Long classificationId,
+			@QueryParam("taxonid") Long taxonid) {
 		try {
 			List<String> resultTaxonIds = taxonomyDefinitionDao.specificSearch(term, taxonid);
 			return Response.status(Status.OK).entity(resultTaxonIds).build();
-		}  catch (Exception e) {
+		} catch (Exception e) {
 			throw new WebApplicationException(
 					Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}

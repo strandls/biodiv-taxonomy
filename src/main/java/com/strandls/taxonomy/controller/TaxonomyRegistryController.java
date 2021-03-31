@@ -101,6 +101,10 @@ public class TaxonomyRegistryController {
 	@Path("/list")
 	@Transactional
 	@Produces(MediaType.APPLICATION_JSON)
+	
+	@ApiOperation(value = "Get taxon relationship", notes = "Returns a taxon relationship", response = TaxonRelation.class, responseContainer = "List")
+	@ApiResponses(value = {
+			@ApiResponse(code = 400, message = "unable to fetch the taxon relationship", response = String.class) })
 	public Response list(@QueryParam("parent") Long parent,
 			@QueryParam("classification") Long classificationId, @QueryParam("taxonIds") String taxonIds,
 			@DefaultValue("false") @QueryParam("expand_taxon") Boolean expandTaxon) {

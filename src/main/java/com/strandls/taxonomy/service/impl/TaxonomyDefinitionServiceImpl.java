@@ -411,7 +411,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				}
 			}
 			if (!taxonIds.isEmpty()) {
-				// taxonomyESUpdate.pushUpdateToElastic(taxonIds);
+				taxonomyESUpdate.pushUpdateToElastic(taxonIds);
 			}
 			reader.close();
 		}
