@@ -161,6 +161,9 @@ public class TaxonomyDefinitionController {
 	@Path("/retrieve/specificSearch")
 	@Produces(MediaType.APPLICATION_JSON)
 	@Transactional
+	@ApiOperation(value = "Search taxonomy based on the Ids", notes = "return the found taxonomy", response = Object.class)
+	@ApiResponses(value = {
+			@ApiResponse(code = 400, message = "failed to get the taxon definition", response = String.class) })
 	public Response specificSearch(@QueryParam("term") String term, @QueryParam("classification") Long classificationId,
 			@QueryParam("taxonid") Long taxonid) {
 		try {
