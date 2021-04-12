@@ -33,6 +33,7 @@ import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import com.google.inject.servlet.GuiceServletContextListener;
 import com.google.inject.servlet.ServletModule;
+import com.strandls.activity.controller.ActivitySerivceApi;
 import com.strandls.taxonomy.controller.TaxonomyControllerModule;
 import com.strandls.taxonomy.dao.TaxonomyDaoModule;
 import com.strandls.taxonomy.service.impl.TaxonomyServiceModule;
@@ -74,6 +75,8 @@ public class TaxonomyServeletContextListener extends GuiceServletContextListener
 
 				bind(LanguageServiceApi.class).in(Scopes.SINGLETON);
 				bind(SessionFactory.class).toInstance(sessionFactory);
+				bind(ActivitySerivceApi.class).in(Scopes.SINGLETON);
+				bind(Headers.class).in(Scopes.SINGLETON);
 				bind(ServletContainer.class).in(Scopes.SINGLETON);
 
 				serve("/api/*").with(ServletContainer.class, props);

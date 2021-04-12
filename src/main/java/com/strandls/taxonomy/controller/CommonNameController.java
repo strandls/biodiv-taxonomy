@@ -4,13 +4,13 @@ import java.util.List;
 
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
-import javax.websocket.server.PathParam;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
@@ -96,7 +96,7 @@ public class CommonNameController {
 	}
 
 	@PUT
-	@Path(ApiConstants.UPDATE + ApiConstants.COMMONNAME)
+	@Path(ApiConstants.UPDATE + ApiConstants.COMMONNAME + "/{speciesId}")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 
@@ -106,10 +106,11 @@ public class CommonNameController {
 	@ApiResponses(value = {
 			@ApiResponse(code = 400, message = "unable to update the commonName", response = String.class) })
 
-	public Response updateAddCommonNames(@Context HttpServletRequest request,
+	public Response updateAddCommonNames(@Context HttpServletRequest request, @PathParam("speciesId") String speciesId,
 			@ApiParam(name = "commonNameData") CommonNamesData commonNamesData) {
 		try {
-			List<CommonName> result = commonNameService.updateAddCommonName(request, commonNamesData);
+			Long sId = Long.parseLong(speciesId);
+			List<CommonName> result = commonNameService.updateAddCommonName(request, sId, commonNamesData);
 			return Response.status(Status.OK).entity(result).build();
 
 		} catch (Exception e) {
@@ -118,7 +119,7 @@ public class CommonNameController {
 	}
 
 	@DELETE
-	@Path(ApiConstants.REMOVE + ApiConstants.COMMONNAME + "/{commonNameId}")
+	@Path(ApiConstants.REMOVE + ApiConstants.COMMONNAME + "/{speciesId}/{commonNameId}")
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
 
@@ -128,11 +129,12 @@ public class CommonNameController {
 	@ApiResponses(value = {
 			@ApiResponse(code = 400, message = "unable to remove the commonName", response = String.class) })
 
-	public Response removeCommonName(@Context HttpServletRequest request,
+	public Response removeCommonName(@Context HttpServletRequest request, @PathParam("speciesId") String speciesId,
 			@ApiParam(name = "commonNameId") @PathParam("commonNameId") String commonNameId) {
 		try {
 			Long cnId = Long.parseLong(commonNameId);
-			List<CommonName> result = commonNameService.removeCommonName(request, cnId);
+			Long sId = Long.parseLong(speciesId);
+			List<CommonName> result = commonNameService.removeCommonName(request, sId, cnId);
 			return Response.status(Status.OK).entity(result).build();
 
 		} catch (Exception e) {

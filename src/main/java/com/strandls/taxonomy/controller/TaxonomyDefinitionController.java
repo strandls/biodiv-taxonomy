@@ -123,9 +123,30 @@ public class TaxonomyDefinitionController {
 	}
 
 	@GET
+	@Path("/canonicalForm")
+	@Produces(MediaType.APPLICATION_JSON)
+	@ApiOperation(value = "Get taxonomy based on the canonical name and rank", notes = "return the found taxonomy", response = TaxonomyDefinition.class, responseContainer = "List")
+	@ApiResponses(value = {
+			@ApiResponse(code = 400, message = "failed to get the taxon definition", response = String.class) })
+	public Response getByCanonicalForm(@QueryParam("canonicalForm") String canonicalForm,
+			@QueryParam("rankName") String rankName) {
+		try {
+			List<TaxonomyDefinition> taxonomyDefinitions = taxonomyDefinitionDao.findByCanonicalForm(canonicalForm,
+					rankName);
+			return Response.status(Status.OK).entity(taxonomyDefinitions).build();
+		} catch (Exception e) {
+			throw new WebApplicationException(
+					Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
+		}
+	}
+
+	@GET
 	@Path("/search")
 	@Produces(MediaType.APPLICATION_JSON)
 	@Transactional
+	@ApiOperation(value = "Search taxonomy based on the name", notes = "return the found taxonomy", response = Object.class)
+	@ApiResponses(value = {
+			@ApiResponse(code = 400, message = "failed to get the taxon definition", response = String.class) })
 	public Response search(@QueryParam("term") String term) {
 		try {
 			Object name = taxonomyDefinitionDao.search(term);
@@ -141,6 +162,9 @@ public class TaxonomyDefinitionController {
 	@Path("/retrieve/specificSearch")
 	@Produces(MediaType.APPLICATION_JSON)
 	@Transactional
+	@ApiOperation(value = "Search taxonomy based on the Ids", notes = "return the found taxonomy", response = Object.class)
+	@ApiResponses(value = {
+			@ApiResponse(code = 400, message = "failed to get the taxon definition", response = String.class) })
 	public Response specificSearch(@QueryParam("term") String term, @QueryParam("classification") Long classificationId,
 			@QueryParam("taxonid") Long taxonid) {
 		try {

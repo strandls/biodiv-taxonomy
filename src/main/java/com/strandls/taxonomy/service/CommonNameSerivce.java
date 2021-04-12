@@ -29,9 +29,10 @@ public interface CommonNameSerivce {
 	public List<CommonName> addCommonNames(Long taxonConceptId, Map<Long, String[]> languageIdToCommonNames,
 			String source);
 
-	public List<CommonName> updateAddCommonName(HttpServletRequest request, CommonNamesData commonNamesData);
+	public List<CommonName> updateAddCommonName(HttpServletRequest request, Long speciesId,
+			CommonNamesData commonNamesData);
 
-	public List<CommonName> removeCommonName(HttpServletRequest request, Long commonNameId);
+	public List<CommonName> removeCommonName(HttpServletRequest request, Long speciesId, Long commonNameId);
 
 	public List<CommonName> fetchByTaxonId(Long taxonId);
 

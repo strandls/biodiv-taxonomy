@@ -8,6 +8,7 @@ import java.util.Map;
 
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.HttpHeaders;
 
 import org.pac4j.core.profile.CommonProfile;
 import org.slf4j.Logger;
@@ -29,6 +30,9 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 
 	@Inject
 	private LanguageServiceApi languageService;
+
+	@Inject
+	private LogActivities logActivity;
 
 	@Inject
 	public CommonNameServiceImpl(CommonNameDao dao) {
@@ -101,7 +105,8 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 	}
 
 	@Override
-	public List<CommonName> updateAddCommonName(HttpServletRequest request, CommonNamesData commonNamesData) {
+	public List<CommonName> updateAddCommonName(HttpServletRequest request, Long speciesId,
+			CommonNamesData commonNamesData) {
 
 		try {
 			CommonProfile profile = AuthUtil.getProfileFromRequest(request);
@@ -113,7 +118,11 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 						commonNamesData.getName(), commonNamesData.getTaxonConceptId(), new Date(), uploaderId, null,
 						false, null, false);
 
-				commonNameDao.save(commonNames);
+				commonNames = commonNameDao.save(commonNames);
+				String desc = "Added common name : " + commonNames.getName();
+				logActivity.LogActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId,
+						"species", commonNames.getId(), "Added common name", null);
+
 			} else {
 				CommonName commonName = commonNameDao.findById(commonNamesData.getId());
 				if (!commonName.getTaxonConceptId().equals(commonNamesData.getTaxonConceptId()))
@@ -122,7 +131,11 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 				if (commonNamesData.getLanguageId() != null)
 					commonName.setLanguageId(commonNamesData.getLanguageId());
 
-				commonNameDao.update(commonName);
+				commonName = commonNameDao.update(commonName);
+				String desc = "Updated common name : " + commonName.getName();
+				logActivity.LogActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId,
+						"species", commonName.getId(), "Updated common name", null);
+
 			}
 			List<CommonName> result = fetchByTaxonId(commonNamesData.getTaxonConceptId());
 			return result;
@@ -135,10 +148,14 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 	}
 
 	@Override
-	public List<CommonName> removeCommonName(HttpServletRequest request, Long commonNameId) {
+	public List<CommonName> removeCommonName(HttpServletRequest request, Long speciesId, Long commonNameId) {
 		try {
 			CommonName commonName = commonNameDao.findById(commonNameId);
 			commonName = commonNameDao.delete(commonName);
+
+			String desc = "Deleted common name : " + commonName.getName();
+			logActivity.LogActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId, "species",
+					commonName.getId(), "Deleted common name", null);
 			List<CommonName> result = fetchByTaxonId(commonName.getTaxonConceptId());
 			return result;
 		} catch (Exception e) {

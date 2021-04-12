@@ -25,5 +25,6 @@ public class TaxonomyServiceModule extends AbstractModule {
 		bind(SpeciesGroupService.class).to(SpeciesGroupServiceImpl.class).in(Scopes.SINGLETON);
 		bind(CommonNameSerivce.class).to(CommonNameServiceImpl.class).in(Scopes.SINGLETON);
 		bind(TaxonomyESUpdate.class).in(Scopes.SINGLETON);
+		bind(LogActivities.class).in(Scopes.SINGLETON);
 	}
 }
