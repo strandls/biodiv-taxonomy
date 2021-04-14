@@ -41,6 +41,7 @@ public class TaxonomyUtil {
 		return highestRank;
 	}
 
+	@SuppressWarnings("unchecked")
 	public static String getRankForSynonym(ParsedName parsedName, String acceptedRank)
 			throws UnRecongnizedRankException {
 		if (parsedName == null)
@@ -65,6 +66,7 @@ public class TaxonomyUtil {
 		return acceptedRank;
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static String getItalicisedForm(ParsedName sciName, String rankName) {
 
 		String name = sciName.getVerbatim();
@@ -80,13 +82,13 @@ public class TaxonomyUtil {
 		int index = 0;
 		for (Object positions : sciName.getPositions()) {
 			ArrayList<Object> position = (ArrayList) positions;
-			
+
 			int start = (int) position.get(1);
-			int end   = (int) position.get(2);
-			
-			if(start > index) 
+			int end = (int) position.get(2);
+
+			if (start > index)
 				italicisedFormBuilder.append(name.substring(index, start));
-			
+
 			if (position.get(0).equals(GENUS) || position.get(0).equals(SPECIFIC_EPITHET)
 					|| position.get(0).equals(INFRA_SPECIFIC_EPITHET) || position.get(0).equals(UNINOMIAL))
 				italicisedFormBuilder.append("<i>" + name.substring(start, end) + "</i>");

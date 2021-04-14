@@ -12,6 +12,7 @@ import javax.transaction.Transactional;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -27,6 +28,7 @@ import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import com.strandls.authentication_utility.filter.ValidateUser;
 import com.strandls.taxonomy.ApiConstants;
 import com.strandls.taxonomy.dao.TaxonomyDefinitionDao;
+import com.strandls.taxonomy.pojo.SynonymData;
 import com.strandls.taxonomy.pojo.TaxonomicNames;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.pojo.request.FileMetadata;
@@ -193,4 +195,50 @@ public class TaxonomyDefinitionController {
 			return Response.status(Status.BAD_GATEWAY).entity(e.getMessage()).build();
 		}
 	}
+
+	@POST
+	@Path(ApiConstants.UPDATE + ApiConstants.SYNONYM + "/{speciesId}/{taxonId}")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ValidateUser
+
+	@ApiOperation(value = "update and add synonyms", notes = "return synonyms based on taxonomyId", response = TaxonomyDefinition.class, responseContainer = "List")
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to add the names", response = String.class) })
+
+	public Response updateAddSynonym(@Context HttpServletRequest request, @PathParam("speciesId") String speciesId,
+			@PathParam("taxonId") String taxonId, @ApiParam(name = "synonymData") SynonymData synonymData) {
+		try {
+			Long sId = Long.parseLong(speciesId);
+			Long tId = Long.parseLong(taxonId);
+			List<TaxonomyDefinition> result = taxonomyService.updateAddSynonym(request, sId, tId, synonymData);
+			return Response.status(Status.OK).entity(result).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
+	}
+
+	@PUT
+	@Path(ApiConstants.REMOVE + ApiConstants.SYNONYM)
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ValidateUser
+
+	@ApiOperation(value = "delete synonyms", notes = "return boolean", response = Boolean.class)
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to delete the names", response = String.class) })
+
+	public Response removeSynonyms(@Context HttpServletRequest request, @QueryParam("speciesId") String speciesId,
+			@QueryParam("taxonId") String taxonId, @QueryParam("synonymId") String synonymId) {
+		try {
+			Long sId = Long.parseLong(speciesId);
+			Long tId = Long.parseLong(taxonId);
+			Long synonId = Long.parseLong(synonymId);
+			Boolean result = taxonomyService.deleteSynonym(request, sId, tId, synonId);
+			return Response.status(Status.OK).entity(result).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
+		}
+	}
+
 }

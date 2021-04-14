@@ -21,21 +21,25 @@ import java.util.concurrent.ExecutionException;
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
+import org.pac4j.core.profile.CommonProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.opencsv.CSVReader;
+import com.strandls.authentication_utility.util.AuthUtil;
 import com.strandls.taxonomy.dao.AcceptedSynonymDao;
 import com.strandls.taxonomy.dao.TaxonomyDefinitionDao;
 import com.strandls.taxonomy.dao.TaxonomyRegistryDao;
 import com.strandls.taxonomy.pojo.AcceptedSynonym;
 import com.strandls.taxonomy.pojo.CommonName;
 import com.strandls.taxonomy.pojo.Rank;
+import com.strandls.taxonomy.pojo.SynonymData;
 import com.strandls.taxonomy.pojo.TaxonomicNames;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.pojo.TaxonomyRegistry;
@@ -86,6 +90,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 	@Inject
 	private ObjectMapper objectMapper;
+
+	@Inject
+	private LogActivities logActivity;
 
 	private final Logger logger = LoggerFactory.getLogger(TaxonomyDefinitionServiceImpl.class);
 
@@ -145,6 +152,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	private Map<String, TaxonomyDefinition> addNodes(HttpServletRequest request, TaxonomySave taxonomySave)
 			throws ApiException, TaxonCreationException {
 
+		CommonProfile profile = AuthUtil.getProfileFromRequest(request);
+		Long userId = Long.parseLong(profile.getId());
 		Map<String, TaxonomyDefinition> createdTaxonomy = new LinkedHashMap<String, TaxonomyDefinition>();
 
 		Map<String, String> constructedRanks = constructRanksForTheInput(request, taxonomySave, taxonomySave.getRank(),
@@ -161,7 +170,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			ParsedName parsedName = entry.getValue();
 			TaxonomyDefinition taxonomyDefinition = createTaxonomyDefiniiton(parsedName, nodeRank,
 					taxonomySave.getStatus(), taxonomySave.getPosition(), taxonomySave.getSource(),
-					taxonomySave.getSourceId());
+					taxonomySave.getSourceId(), userId);
 			createdTaxonomy.put(nodeRank, taxonomyDefinition);
 			Long taxonomyDefinitionId = taxonomyDefinition.getId();
 			path.append(".");
@@ -201,7 +210,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				if (synonymTaxonomy == null
 						|| TaxonomyStatus.ACCEPTED.name().equalsIgnoreCase(synonymTaxonomy.getStatus())) {
 					synonymTaxonomy = createTaxonomyDefiniiton(parsedName, synonymRank, TaxonomyStatus.SYNONYM,
-							taxonomySave.getPosition(), taxonomySave.getSource(), taxonomySave.getSourceId());
+							taxonomySave.getPosition(), taxonomySave.getSource(), taxonomySave.getSourceId(), userId);
 				}
 				Long synonymId = synonymTaxonomy.getId();
 				AcceptedSynonym acceptedSynonym = acceptedSynonymDao.findByAccpetedIdSynonymId(acceptedId, synonymId);
@@ -244,7 +253,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		if (taxonomyDefinition == null) { // First entry without the ROOT element in definition and registry
 			ParsedName parsedName = utilityServiceApi.getNameParsed("Root");
 			taxonomyDefinition = createTaxonomyDefiniiton(parsedName, "root", TaxonomyStatus.ACCEPTED,
-					TaxonomyPosition.CLEAN, null, null);
+					TaxonomyPosition.CLEAN, null, null, null);
 			Long taxonomyDefinitionId = taxonomyDefinition.getId();
 			String path = taxonomyDefinitionId.toString();
 
@@ -264,9 +273,44 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		return taxonomyCreationHierarchy;
 	}
 
+	private TaxonomyDefinition updateTaxonomyDefinition(Long taxonId, ParsedName parsedName, String rankName,
+			TaxonomyStatus taxonomyStatus, TaxonomyPosition taxonomyPosition, String source, String sourceId,
+			Long uploaderId) {
+
+		TaxonomyDefinition taxonomyDefinition = taxonomyDao.findById(taxonId);
+
+		String canonicalName = parsedName.getCanonicalName().getFull();
+		String[] nameTokens = canonicalName.split(" ");
+		String binomialName;
+		if (nameTokens.length >= 2)
+			binomialName = nameTokens[0] + " " + nameTokens[1];
+		else
+			binomialName = canonicalName;
+		String italicisedForm = TaxonomyUtil.getItalicisedForm(parsedName, rankName);
+		String status = taxonomyStatus.name();
+		String position = taxonomyPosition.name();
+
+		taxonomyDefinition.setBinomialForm(binomialName);
+		taxonomyDefinition.setCanonicalForm(canonicalName);
+		taxonomyDefinition.setItalicisedForm(italicisedForm);
+		taxonomyDefinition.setName(parsedName.getVerbatim().trim());
+		taxonomyDefinition.setNormalizedForm(parsedName.getNormalized());
+		taxonomyDefinition.setRank(rankName);
+		taxonomyDefinition.setStatus(status);
+		taxonomyDefinition.setPosition(position);
+		taxonomyDefinition.setUploaderId(uploaderId);
+		taxonomyDefinition.setViaDatasource(source);
+		taxonomyDefinition.setNameSourceId(sourceId);
+		taxonomyDefinition.setAuthorYear(parsedName.getAuthorship());
+
+		taxonomyDefinition = taxonomyDao.update(taxonomyDefinition);
+		return taxonomyDefinition;
+
+	}
+
 	private TaxonomyDefinition createTaxonomyDefiniiton(ParsedName parsedName, String rankName,
-			TaxonomyStatus taxonomyStatus, TaxonomyPosition taxonomyPosition, String source, String sourceId)
-			throws TaxonCreationException {
+			TaxonomyStatus taxonomyStatus, TaxonomyPosition taxonomyPosition, String source, String sourceId,
+			Long userId) throws TaxonCreationException {
 		if (parsedName == null || parsedName.getCanonicalName() == null)
 			throw new TaxonCreationException("Not valid name");
 		String canonicalName = parsedName.getCanonicalName().getFull();
@@ -278,7 +322,11 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			binomialName = canonicalName;
 		String italicisedForm = TaxonomyUtil.getItalicisedForm(parsedName, rankName);
 		Timestamp uploadTime = new Timestamp(new Date().getTime());
-		Long uploaderId = UPLOADER_ID;
+		Long uploaderId = null;
+		if (userId == null)
+			uploaderId = UPLOADER_ID;
+		else
+			uploaderId = userId;
 		String status = taxonomyStatus.name();
 		String position = taxonomyPosition.name();
 		String classs = "species.TaxonomyDefinition";
@@ -429,15 +477,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 		try {
 			List<CommonName> commonNames = commonNameSerivce.fetchByTaxonId(taxonId);
-
-			List<AcceptedSynonym> acceptedSynonymsList = acceptedSynonymDao.findByAccepetdId(taxonId);
-			List<TaxonomyDefinition> synonymList = new ArrayList<TaxonomyDefinition>();
-			if (acceptedSynonymsList != null && !acceptedSynonymsList.isEmpty()) {
-				for (AcceptedSynonym synonym : acceptedSynonymsList) {
-					TaxonomyDefinition taxonomy = taxonomyDao.findById(synonym.getSynonymId());
-					synonymList.add(taxonomy);
-				}
-			}
+			List<TaxonomyDefinition> synonymList = findSynonyms(taxonId);
 
 			TaxonomicNames result = new TaxonomicNames(commonNames, synonymList);
 			return result;
@@ -446,6 +486,78 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			logger.error(e.getMessage());
 		}
 		return null;
+
+	}
+
+	private List<TaxonomyDefinition> findSynonyms(Long taxonId) {
+		List<AcceptedSynonym> acceptedSynonymsList = acceptedSynonymDao.findByAccepetdId(taxonId);
+		List<TaxonomyDefinition> synonymList = new ArrayList<TaxonomyDefinition>();
+		if (acceptedSynonymsList != null && !acceptedSynonymsList.isEmpty()) {
+			for (AcceptedSynonym synonym : acceptedSynonymsList) {
+				TaxonomyDefinition taxonomy = taxonomyDao.findById(synonym.getSynonymId());
+				synonymList.add(taxonomy);
+			}
+		}
+		return synonymList;
+	}
+
+	@Override
+	public List<TaxonomyDefinition> updateAddSynonym(HttpServletRequest request, Long speciesId, Long taxonId,
+			SynonymData synonymData) {
+
+		try {
+			ParsedName parsedName = utilityServiceApi.getNameParsed(synonymData.getName());
+			String synonymRank = TaxonomyUtil.getRankForSynonym(parsedName, synonymData.getRank());
+			CommonProfile profile = AuthUtil.getProfileFromRequest(request);
+
+			Long userId = Long.parseLong(profile.getId());
+
+			TaxonomyDefinition synonymTaxonomy = null;
+			String desc = "";
+			String activityType = "";
+			if (synonymData.getId() == null) {
+
+				synonymTaxonomy = createTaxonomyDefiniiton(parsedName, synonymRank, TaxonomyStatus.SYNONYM,
+						TaxonomyPosition.fromValue(synonymData.getPosotion()), synonymData.getDataSource(),
+						synonymData.getDataSourceId(), userId);
+				desc = "Added synonym : " + synonymTaxonomy.getName();
+				activityType = "Added synonym";
+			} else {
+				synonymTaxonomy = updateTaxonomyDefinition(taxonId, parsedName, synonymRank, TaxonomyStatus.SYNONYM,
+						TaxonomyPosition.fromValue(synonymData.getPosotion()), synonymData.getDataSource(),
+						synonymData.getDataSourceId(), userId);
+				desc = "Updated synonym : " + synonymTaxonomy.getName();
+				activityType = "Updated synonym";
+			}
+
+			logActivity.LogActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId, "species",
+					synonymTaxonomy.getId(), activityType, null);
+
+			return findSynonyms(taxonId);
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		}
+		return null;
+	}
+
+	@Override
+	public Boolean deleteSynonym(HttpServletRequest request, Long speciesId, Long taxonId, Long synonymId) {
+		try {
+			AcceptedSynonym acceptedSynonym = acceptedSynonymDao.findByAccpetedIdSynonymId(taxonId, synonymId);
+			acceptedSynonymDao.delete(acceptedSynonym);
+			TaxonomyDefinition taxnomyDefinition = taxonomyDao.findById(synonymId);
+			taxnomyDefinition.setIsDeleted(true);
+			taxonomyDao.update(taxnomyDefinition);
+
+			String desc = "Deleted synonym : " + taxnomyDefinition.getName();
+
+			logActivity.LogActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId, "species",
+					taxnomyDefinition.getId(), "Deleted synonym", null);
+			return true;
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		}
+		return false;
 
 	}
 }

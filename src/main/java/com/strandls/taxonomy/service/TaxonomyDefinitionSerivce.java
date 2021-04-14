@@ -12,6 +12,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 
+import com.strandls.taxonomy.pojo.SynonymData;
 import com.strandls.taxonomy.pojo.TaxonomicNames;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.pojo.request.TaxonomySave;
@@ -37,4 +38,9 @@ public interface TaxonomyDefinitionSerivce {
 			throws IOException, ApiException, InterruptedException, ExecutionException;
 
 	public TaxonomicNames findSynonymCommonName(Long taxonId);
+
+	public List<TaxonomyDefinition> updateAddSynonym(HttpServletRequest request, Long speciesId, Long taxonId,
+			SynonymData synonymData);
+
+	public Boolean deleteSynonym(HttpServletRequest request, Long speciesId, Long taxonId, Long synonymId);
 }
