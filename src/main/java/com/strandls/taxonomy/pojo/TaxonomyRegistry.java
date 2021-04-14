@@ -8,8 +8,12 @@ import java.io.Serializable;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
+
+import org.hibernate.annotations.Type;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
@@ -31,9 +35,12 @@ public class TaxonomyRegistry implements Serializable {
 	private Long classificationId;
 	private String path;
 	private Long taxonomyDefinationId;
+	private String rank;
 
 	@Id
-	@GeneratedValue
+	//@GeneratedValue
+	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "taxonomy_registry_id_generator")
+	@SequenceGenerator(name = "taxonomy_registry_id_generator", sequenceName = "taxonomy_registry_id_seq", allocationSize = 1)
 	@Column(name = "id")
 	public Long getId() {
 		return id;
@@ -52,7 +59,8 @@ public class TaxonomyRegistry implements Serializable {
 		this.classificationId = classificationId;
 	}
 
-	@Column(name = "path")
+	@Column(name = "path", columnDefinition = "ltree")
+	@Type(type = "com.strandls.taxonomy.pojo.enumtype.LTreeType")
 	public String getPath() {
 		return path;
 	}
@@ -70,4 +78,12 @@ public class TaxonomyRegistry implements Serializable {
 		this.taxonomyDefinationId = taxonomyDefinationId;
 	}
 
+	@Column(name = "rank", nullable = false)
+	public String getRank() {
+		return rank;
+	}
+	
+	public void setRank(String rank) {
+		this.rank = rank;
+	}
 }

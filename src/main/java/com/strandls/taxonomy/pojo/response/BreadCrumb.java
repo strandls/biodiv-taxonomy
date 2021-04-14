@@ -1,7 +1,7 @@
 /**
  * 
  */
-package com.strandls.taxonomy.pojo;
+package com.strandls.taxonomy.pojo.response;
 
 /**
  * @author Abhishek Rudra

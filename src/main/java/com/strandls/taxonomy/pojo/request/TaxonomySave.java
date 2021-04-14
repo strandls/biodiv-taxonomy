@@ -1,0 +1,109 @@
+package com.strandls.taxonomy.pojo.request;
+
+import java.util.Map;
+
+import com.strandls.taxonomy.pojo.enumtype.TaxonomyPosition;
+import com.strandls.taxonomy.pojo.enumtype.TaxonomyStatus;
+
+public class TaxonomySave {
+
+	private String scientificName;
+	private String rank;
+	private String synonyms;
+	private TaxonomyStatus status;
+	private TaxonomyPosition position;
+	private String sourceId;
+	private String source;
+	private Map<Long, String[]> commonNames;
+	private Map<String, String> rankToName;
+
+	public TaxonomySave() {
+		super();
+	}
+
+	public TaxonomySave(String scientificName, String rank, String synonyms, TaxonomyStatus status,
+			TaxonomyPosition position, String sourceId, String source, Map<Long, String[]> commonNames, Map<String, String> rankToName) {
+		super();
+		this.scientificName = scientificName;
+		this.rank = rank;
+		this.synonyms = synonyms;
+		this.status = status;
+		this.position = position;
+		this.sourceId = sourceId;
+		this.source = source;
+		this.commonNames = commonNames;
+		this.rankToName = rankToName;
+	}
+
+	public String getScientificName() {
+		return scientificName;
+	}
+
+	public void setScientificName(String scientificName) {
+		this.scientificName = scientificName;
+	}
+
+	public String getRank() {
+		return rank;
+	}
+
+	public void setRank(String rank) {
+		this.rank = rank;
+	}
+
+	public String getSynonyms() {
+		return synonyms;
+	}
+
+	public void setSynonyms(String synonyms) {
+		this.synonyms = synonyms;
+	}
+
+	public TaxonomyStatus getStatus() {
+		return status;
+	}
+
+	public void setStatus(TaxonomyStatus status) {
+		this.status = status;
+	}
+
+	public TaxonomyPosition getPosition() {
+		return position;
+	}
+
+	public void setPosition(TaxonomyPosition position) {
+		this.position = position;
+	}
+
+	public String getSourceId() {
+		return sourceId;
+	}
+	
+	public void setSourceId(String sourceId) {
+		this.sourceId = sourceId;
+	}
+	
+	public String getSource() {
+		return source;
+	}
+
+	public void setSource(String source) {
+		this.source = source;
+	}
+	
+	public Map<Long, String[]> getCommonNames() {
+		return commonNames;
+	}
+	
+	public void setCommonNames(Map<Long, String[]> commonNames) {
+		this.commonNames = commonNames;
+	}
+
+	public Map<String, String> getRankToName() {
+		return rankToName;
+	}
+
+	public void setRankToName(Map<String, String> rankToName) {
+		this.rankToName = rankToName;
+	}
+}
