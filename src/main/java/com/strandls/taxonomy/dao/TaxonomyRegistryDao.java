@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.strandls.taxonomy.pojo.TaxonomyRegistry;
+import com.strandls.taxonomy.pojo.response.TaxonomyRegistryResponse;
 import com.strandls.taxonomy.util.AbstractDAO;
 
 /**
@@ -66,7 +67,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		}
 		return entity;
 	}
-
+	
 	@SuppressWarnings("unchecked")
 	public TaxonomyRegistry findbyTaxonomyId(Long taxonomyId) {
 
@@ -183,6 +184,26 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 			session.close();
 		}
 
+		return null;
+	}
+	
+	public List<TaxonomyRegistryResponse> getPathToRoot(Long taxonId) {
+		Session session = sessionFactory.openSession();
+		try {
+			String sqlString = "select cast(td.id as varchar), td.rank, td.name from (select * from taxonomy_registry where path @> "
+					+ "(select path from taxonomy_registry where taxon_definition_id = :taxonId) and "
+					+ "classification_id=:classificationId) tr "
+					+ "left outer join taxonomy_definition td "
+					+ "on td.id = tr.taxon_definition_id";
+			Query query = session.createNativeQuery(sqlString);
+			query.setParameter("taxonId", taxonId);
+			query.setParameter("classificationId", CLASSIFICATION_ID);
+			return getResultList(query, TaxonomyRegistryResponse.class);
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
 		return null;
 	}
 
