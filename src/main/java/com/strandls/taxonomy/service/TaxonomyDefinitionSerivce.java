@@ -14,6 +14,7 @@ import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.pojo.request.TaxonomySave;
+import com.strandls.taxonomy.pojo.response.TaxonomySearch;
 import com.strandls.utility.ApiException;
 
 /**
@@ -32,4 +33,7 @@ public interface TaxonomyDefinitionSerivce {
 	public TaxonomyDefinition save(TaxonomyDefinition taxonomyDefinition);
 
 	public Map<String, Object> uploadFile(HttpServletRequest request, FormDataMultiPart multiPart) throws IOException, ApiException, InterruptedException, ExecutionException;
+
+	public TaxonomySearch getByNameSearch(String scientificName, String rankName) throws ApiException;
+	
 }
