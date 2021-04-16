@@ -33,6 +33,7 @@ import com.strandls.taxonomy.pojo.TaxonomicNames;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.pojo.request.FileMetadata;
 import com.strandls.taxonomy.pojo.request.TaxonomySave;
+import com.strandls.taxonomy.pojo.response.TaxonomySearch;
 import com.strandls.taxonomy.service.TaxonomyDefinitionSerivce;
 
 import io.swagger.annotations.Api;
@@ -125,17 +126,16 @@ public class TaxonomyDefinitionController {
 	}
 
 	@GET
-	@Path("/canonicalForm")
+	@Path("/nameSearch")
 	@Produces(MediaType.APPLICATION_JSON)
 	@ApiOperation(value = "Get taxonomy based on the canonical name and rank", notes = "return the found taxonomy", response = TaxonomyDefinition.class, responseContainer = "List")
 	@ApiResponses(value = {
 			@ApiResponse(code = 400, message = "failed to get the taxon definition", response = String.class) })
-	public Response getByCanonicalForm(@QueryParam("canonicalForm") String canonicalForm,
+	public Response getByNameSearch(@QueryParam("scientificName") String scientificName,
 			@QueryParam("rankName") String rankName) {
 		try {
-			List<TaxonomyDefinition> taxonomyDefinitions = taxonomyDefinitionDao.findByCanonicalForm(canonicalForm,
-					rankName);
-			return Response.status(Status.OK).entity(taxonomyDefinitions).build();
+			TaxonomySearch taxonomySearch = taxonomyService.getByNameSearch(scientificName, rankName);
+			return Response.status(Status.OK).entity(taxonomySearch).build();
 		} catch (Exception e) {
 			throw new WebApplicationException(
 					Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());

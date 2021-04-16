@@ -16,6 +16,7 @@ import com.strandls.taxonomy.pojo.SynonymData;
 import com.strandls.taxonomy.pojo.TaxonomicNames;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.pojo.request.TaxonomySave;
+import com.strandls.taxonomy.pojo.response.TaxonomySearch;
 import com.strandls.utility.ApiException;
 
 /**
@@ -43,4 +44,7 @@ public interface TaxonomyDefinitionSerivce {
 			SynonymData synonymData);
 
 	public Boolean deleteSynonym(HttpServletRequest request, Long speciesId, Long taxonId, Long synonymId);
+
+	public TaxonomySearch getByNameSearch(String scientificName, String rankName) throws ApiException;
+
 }

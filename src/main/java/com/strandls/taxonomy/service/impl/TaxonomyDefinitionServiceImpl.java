@@ -48,6 +48,8 @@ import com.strandls.taxonomy.pojo.enumtype.TaxonomyStatus;
 import com.strandls.taxonomy.pojo.request.FileMetadata;
 import com.strandls.taxonomy.pojo.request.TaxonomyCreationHierarchy;
 import com.strandls.taxonomy.pojo.request.TaxonomySave;
+import com.strandls.taxonomy.pojo.response.TaxonomyRegistryResponse;
+import com.strandls.taxonomy.pojo.response.TaxonomySearch;
 import com.strandls.taxonomy.service.CommonNameSerivce;
 import com.strandls.taxonomy.service.RankSerivce;
 import com.strandls.taxonomy.service.TaxonomyDefinitionSerivce;
@@ -558,6 +560,41 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			logger.error(e.getMessage());
 		}
 		return false;
+	}
 
+	@SuppressWarnings("unchecked")
+	@Override
+	public TaxonomySearch getByNameSearch(String scientificName, String rankName) throws ApiException {
+		TaxonomySearch taxonomySearch = new TaxonomySearch();
+		ParsedName parsedName = utilityServiceApi.getNameParsed(scientificName);
+		String canonicalForm = parsedName.getCanonicalName().getFull();
+		List<TaxonomyDefinition> taxonomyDefinitions = taxonomyDao.findByCanonicalForm(canonicalForm, rankName);
+		if (taxonomyDefinitions.isEmpty()) {
+			List<Object> details = parsedName.getDetails();
+			if (details.get(0) instanceof LinkedHashMap) {
+				Map<String, Object> m = (Map<String, Object>) details.get(0);
+				if (m.containsKey(TaxonomyUtil.GENUS))
+					canonicalForm = (String) ((LinkedHashMap<String, Object>) m.get(TaxonomyUtil.GENUS)).get("value");
+				else if (m.containsKey(TaxonomyUtil.UNINOMIAL)) {
+					canonicalForm = (String) ((LinkedHashMap<String, Object>) m.get(TaxonomyUtil.UNINOMIAL))
+							.get("value");
+				}
+				taxonomyDefinitions = taxonomyDao.findByCanonicalForm(canonicalForm, TaxonomyUtil.GENUS);
+
+				if (!taxonomyDefinitions.isEmpty()) {
+					// Taking the first one to auto Fill
+					Map<Long, List<TaxonomyRegistryResponse>> partiallyMatchedRegistry = new HashMap<Long, List<TaxonomyRegistryResponse>>();
+					for (TaxonomyDefinition taxonomyDefinition : taxonomyDefinitions) {
+						List<TaxonomyRegistryResponse> taxonomyRegistry = taxonomyRegistryDao
+								.getPathToRoot(taxonomyDefinition.getId());
+						partiallyMatchedRegistry.put(taxonomyDefinition.getId(), taxonomyRegistry);
+					}
+					taxonomySearch.setPartiallyMatchedRegistry(partiallyMatchedRegistry);
+				}
+			}
+		} else
+			taxonomySearch.setMatched(taxonomyDefinitions);
+
+		return taxonomySearch;
 	}
 }

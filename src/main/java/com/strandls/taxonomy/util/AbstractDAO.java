@@ -1,8 +1,10 @@
 package com.strandls.taxonomy.util;
 
 import java.io.Serializable;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import javax.persistence.NoResultException;
@@ -96,7 +98,7 @@ public abstract class AbstractDAO<T, K extends Serializable> {
 
 	// TODO:improve this to do dynamic finder on any property
 	@SuppressWarnings("unchecked")
-	public T findByPropertyWithCondition(String property, String value, String condition) {
+	public T findByPropertyWithCondition(String property, Object value, String condition) {
 		String queryStr = "" + "from " + daoType.getSimpleName() + " t " + "where t." + property + " " + condition
 				+ " :value";
 		Session session = sessionFactory.openSession();
@@ -135,4 +137,30 @@ public abstract class AbstractDAO<T, K extends Serializable> {
 		return resultList;
 	}
 
+	public static <T> T map(Class<T> type, Object[] tuple) {
+		List<Class<?>> tupleTypes = new ArrayList<>();
+		for (Object field : tuple) {
+			tupleTypes.add(field.getClass());
+		}
+		try {
+			Constructor<T> ctor = type.getConstructor(tupleTypes.toArray(new Class<?>[tuple.length]));
+			return ctor.newInstance(tuple);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public static <T> List<T> map(Class<T> type, List<Object[]> records) {
+		List<T> result = new LinkedList<T>();
+		for (Object[] record : records) {
+			result.add(map(type, record));
+		}
+		return result;
+	}
+
+	public static <T> List<T> getResultList(Query query, Class<T> type) {
+		@SuppressWarnings("unchecked")
+		List<Object[]> records = query.getResultList();
+		return map(type, records);
+	}
 }
