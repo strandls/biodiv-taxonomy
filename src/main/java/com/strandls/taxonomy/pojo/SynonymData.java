@@ -13,7 +13,6 @@ public class SynonymData {
 	private Long id;
 	private String name;
 	private String rank;
-	private String posotion;
 	private String dataSource;
 	private String dataSourceId;
 
@@ -28,16 +27,14 @@ public class SynonymData {
 	 * @param id
 	 * @param name
 	 * @param rank
-	 * @param posotion
 	 * @param dataSource
 	 * @param dataSourceId
 	 */
-	public SynonymData(Long id, String name, String rank, String posotion, String dataSource, String dataSourceId) {
+	public SynonymData(Long id, String name, String rank, String dataSource, String dataSourceId) {
 		super();
 		this.id = id;
 		this.name = name;
 		this.rank = rank;
-		this.posotion = posotion;
 		this.dataSource = dataSource;
 		this.dataSourceId = dataSourceId;
 	}
@@ -64,14 +61,6 @@ public class SynonymData {
 
 	public void setRank(String rank) {
 		this.rank = rank;
-	}
-
-	public String getPosotion() {
-		return posotion;
-	}
-
-	public void setPosotion(String posotion) {
-		this.posotion = posotion;
 	}
 
 	public String getDataSource() {

@@ -520,14 +520,12 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			if (synonymData.getId() == null) {
 
 				synonymTaxonomy = createTaxonomyDefiniiton(parsedName, synonymRank, TaxonomyStatus.SYNONYM,
-						TaxonomyPosition.fromValue(synonymData.getPosotion()), synonymData.getDataSource(),
-						synonymData.getDataSourceId(), userId);
+						TaxonomyPosition.RAW, synonymData.getDataSource(), synonymData.getDataSourceId(), userId);
 				desc = "Added synonym : " + synonymTaxonomy.getName();
 				activityType = "Added synonym";
 			} else {
 				synonymTaxonomy = updateTaxonomyDefinition(taxonId, parsedName, synonymRank, TaxonomyStatus.SYNONYM,
-						TaxonomyPosition.fromValue(synonymData.getPosotion()), synonymData.getDataSource(),
-						synonymData.getDataSourceId(), userId);
+						TaxonomyPosition.RAW, synonymData.getDataSource(), synonymData.getDataSourceId(), userId);
 				desc = "Updated synonym : " + synonymTaxonomy.getName();
 				activityType = "Updated synonym";
 			}
