@@ -10,9 +10,9 @@ import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import javax.transaction.Transactional;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -218,8 +218,8 @@ public class TaxonomyDefinitionController {
 		}
 	}
 
-	@PUT
-	@Path(ApiConstants.REMOVE + ApiConstants.SYNONYM)
+	@DELETE
+	@Path(ApiConstants.REMOVE + ApiConstants.SYNONYM + "/{speciesId}/{taxonId}/{synonymId}")
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
 
@@ -228,8 +228,8 @@ public class TaxonomyDefinitionController {
 	@ApiOperation(value = "delete synonyms", notes = "return boolean", response = Boolean.class)
 	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to delete the names", response = String.class) })
 
-	public Response removeSynonyms(@Context HttpServletRequest request, @QueryParam("speciesId") String speciesId,
-			@QueryParam("taxonId") String taxonId, @QueryParam("synonymId") String synonymId) {
+	public Response removeSynonyms(@Context HttpServletRequest request, @PathParam("speciesId") String speciesId,
+			@PathParam("taxonId") String taxonId, @PathParam("synonymId") String synonymId) {
 		try {
 			Long sId = Long.parseLong(speciesId);
 			Long tId = Long.parseLong(taxonId);
