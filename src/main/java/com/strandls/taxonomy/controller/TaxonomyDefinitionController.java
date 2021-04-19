@@ -128,7 +128,7 @@ public class TaxonomyDefinitionController {
 	@GET
 	@Path("/nameSearch")
 	@Produces(MediaType.APPLICATION_JSON)
-	@ApiOperation(value = "Get taxonomy based on the canonical name and rank", notes = "return the found taxonomy", response = TaxonomyDefinition.class, responseContainer = "List")
+	@ApiOperation(value = "Get taxonomy based on the canonical name and rank", notes = "return the found taxonomy", response = TaxonomySearch.class)
 	@ApiResponses(value = {
 			@ApiResponse(code = 400, message = "failed to get the taxon definition", response = String.class) })
 	public Response getByNameSearch(@QueryParam("scientificName") String scientificName,
