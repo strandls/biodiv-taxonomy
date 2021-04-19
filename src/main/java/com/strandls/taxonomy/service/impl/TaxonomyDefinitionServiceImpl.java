@@ -517,34 +517,70 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			TaxonomyDefinition synonymTaxonomy = null;
 			String desc = "";
 			String activityType = "";
+			Long synonymId = null;
+			String name = "";
+			TaxonomyDefinition synonymCheck = findByCanonicalName(parsedName, synonymRank, TaxonomyStatus.SYNONYM,
+					null);
+
 			if (synonymData.getId() == null) {
+				if (synonymCheck == null) {
 
-				synonymTaxonomy = createTaxonomyDefiniiton(parsedName, synonymRank, TaxonomyStatus.SYNONYM,
-						TaxonomyPosition.RAW, synonymData.getDataSource(), synonymData.getDataSourceId(), userId);
+					synonymTaxonomy = createTaxonomyDefiniiton(parsedName, synonymRank, TaxonomyStatus.SYNONYM,
+							TaxonomyPosition.RAW, synonymData.getDataSource(), synonymData.getDataSourceId(), userId);
+					synonymId = synonymTaxonomy.getId();
+					name = synonymTaxonomy.getName();
+				} else {
+					synonymId = synonymCheck.getId();
+					name = synonymCheck.getName();
+				}
 
-				AcceptedSynonym acceptedSynonym = acceptedSynonymDao.findByAccpetedIdSynonymId(taxonId,
-						synonymTaxonomy.getId());
+				AcceptedSynonym acceptedSynonym = acceptedSynonymDao.findByAccpetedIdSynonymId(taxonId, synonymId);
 				if (acceptedSynonym == null) {
 					acceptedSynonym = new AcceptedSynonym();
 					acceptedSynonym.setAcceptedId(taxonId);
-					acceptedSynonym.setSynonymId(synonymTaxonomy.getId());
+					acceptedSynonym.setSynonymId(synonymId);
 					acceptedSynonym.setVersion(0L);
 					acceptedSynonymDao.save(acceptedSynonym);
 				}
 
-				desc = "Added synonym : " + synonymTaxonomy.getName();
+				desc = "Added synonym : " + name;
 
 				activityType = "Added synonym";
+
 			} else {
-				synonymTaxonomy = updateTaxonomyDefinition(synonymData.getId(), parsedName, synonymRank,
-						TaxonomyStatus.SYNONYM, TaxonomyPosition.RAW, synonymData.getDataSource(),
-						synonymData.getDataSourceId(), userId);
-				desc = "Updated synonym : " + synonymTaxonomy.getName();
+
+				if (synonymCheck == null) {
+					synonymTaxonomy = updateTaxonomyDefinition(synonymData.getId(), parsedName, synonymRank,
+							TaxonomyStatus.SYNONYM, TaxonomyPosition.RAW, synonymData.getDataSource(),
+							synonymData.getDataSourceId(), userId);
+					synonymId = synonymTaxonomy.getId();
+					name = synonymTaxonomy.getName();
+				} else {
+//					delete previous synonym
+					synonymId = synonymCheck.getId();
+					name = synonymCheck.getName();
+					AcceptedSynonym acceptedSynonym = acceptedSynonymDao.findByAccpetedIdSynonymId(taxonId,
+							synonymData.getId());
+					acceptedSynonymDao.delete(acceptedSynonym);
+					TaxonomyDefinition taxnomyDefinition = taxonomyDao.findById(synonymData.getId());
+					taxnomyDefinition.setIsDeleted(true);
+					taxonomyDao.update(taxnomyDefinition);
+
+//					map the exist synonym
+					acceptedSynonym = new AcceptedSynonym();
+					acceptedSynonym.setAcceptedId(taxonId);
+					acceptedSynonym.setSynonymId(synonymId);
+					acceptedSynonym.setVersion(0L);
+					acceptedSynonymDao.save(acceptedSynonym);
+
+				}
+
+				desc = "Updated synonym : " + name;
 				activityType = "Updated synonym";
 			}
 
 			logActivity.LogActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId, "species",
-					synonymTaxonomy.getId(), activityType, null);
+					synonymId, activityType, null);
 
 			return findSynonyms(taxonId);
 		} catch (Exception e) {
