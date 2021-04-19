@@ -521,11 +521,24 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 				synonymTaxonomy = createTaxonomyDefiniiton(parsedName, synonymRank, TaxonomyStatus.SYNONYM,
 						TaxonomyPosition.RAW, synonymData.getDataSource(), synonymData.getDataSourceId(), userId);
+
+				AcceptedSynonym acceptedSynonym = acceptedSynonymDao.findByAccpetedIdSynonymId(taxonId,
+						synonymTaxonomy.getId());
+				if (acceptedSynonym == null) {
+					acceptedSynonym = new AcceptedSynonym();
+					acceptedSynonym.setAcceptedId(taxonId);
+					acceptedSynonym.setSynonymId(synonymTaxonomy.getId());
+					acceptedSynonym.setVersion(0L);
+					acceptedSynonymDao.save(acceptedSynonym);
+				}
+
 				desc = "Added synonym : " + synonymTaxonomy.getName();
+
 				activityType = "Added synonym";
 			} else {
-				synonymTaxonomy = updateTaxonomyDefinition(taxonId, parsedName, synonymRank, TaxonomyStatus.SYNONYM,
-						TaxonomyPosition.RAW, synonymData.getDataSource(), synonymData.getDataSourceId(), userId);
+				synonymTaxonomy = updateTaxonomyDefinition(synonymData.getId(), parsedName, synonymRank,
+						TaxonomyStatus.SYNONYM, TaxonomyPosition.RAW, synonymData.getDataSource(),
+						synonymData.getDataSourceId(), userId);
 				desc = "Updated synonym : " + synonymTaxonomy.getName();
 				activityType = "Updated synonym";
 			}
