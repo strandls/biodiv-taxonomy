@@ -40,6 +40,7 @@ import com.strandls.taxonomy.pojo.enumtype.TaxonomyStatus;
 import com.strandls.taxonomy.pojo.request.FileMetadata;
 import com.strandls.taxonomy.pojo.request.TaxonomyCreationHierarchy;
 import com.strandls.taxonomy.pojo.request.TaxonomySave;
+import com.strandls.taxonomy.pojo.response.TaxonomyDefinitionAndRegistry;
 import com.strandls.taxonomy.pojo.response.TaxonomyRegistryResponse;
 import com.strandls.taxonomy.pojo.response.TaxonomySearch;
 import com.strandls.taxonomy.service.CommonNameSerivce;
@@ -441,17 +442,27 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 				if (!taxonomyDefinitions.isEmpty()) {
 					// Taking the first one to auto Fill
-					Map<Long, List<TaxonomyRegistryResponse>> partiallyMatchedRegistry = new HashMap<Long, List<TaxonomyRegistryResponse>>();
+					List<TaxonomyDefinitionAndRegistry> parentMatched = new ArrayList<TaxonomyDefinitionAndRegistry>();
+					//Map<Long, List<TaxonomyRegistryResponse>> parentMatched = new HashMap<Long, List<TaxonomyRegistryResponse>>();
 					for (TaxonomyDefinition taxonomyDefinition : taxonomyDefinitions) {
 						List<TaxonomyRegistryResponse> taxonomyRegistry = taxonomyRegistryDao
 								.getPathToRoot(taxonomyDefinition.getId());
-						partiallyMatchedRegistry.put(taxonomyDefinition.getId(), taxonomyRegistry);
+						TaxonomyDefinitionAndRegistry taxonomyDefinitionAndRegistry = new TaxonomyDefinitionAndRegistry(taxonomyDefinition, taxonomyRegistry);
+						parentMatched.add(taxonomyDefinitionAndRegistry);
 					}
-					taxonomySearch.setPartiallyMatchedRegistry(partiallyMatchedRegistry);
+					taxonomySearch.setParentMatched(parentMatched);
 				}
 			}
-		} else
-			taxonomySearch.setMatched(taxonomyDefinitions);
+		} else {
+			List<TaxonomyDefinitionAndRegistry> matched = new ArrayList<TaxonomyDefinitionAndRegistry>();
+			for(TaxonomyDefinition taxonomyDefinition : taxonomyDefinitions) {
+				List<TaxonomyRegistryResponse> taxonomyRegistry = taxonomyRegistryDao
+						.getPathToRoot(taxonomyDefinition.getId());
+				TaxonomyDefinitionAndRegistry taxonomyDefinitionAndRegistry = new TaxonomyDefinitionAndRegistry(taxonomyDefinition, taxonomyRegistry);
+				matched.add(taxonomyDefinitionAndRegistry);
+			}
+			taxonomySearch.setMatched(matched);
+		}
 
 		return taxonomySearch;
 	}
