@@ -1,40 +1,37 @@
 package com.strandls.taxonomy.pojo.response;
 
 import java.util.List;
-import java.util.Map;
-
-import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 
 public class TaxonomySearch {
 
-	private List<TaxonomyDefinition> matched;
-	private Map<Long, List<TaxonomyRegistryResponse>> partiallyMatchedRegistry;
+	private List<TaxonomyDefinitionAndRegistry> matched;
+	private List<TaxonomyDefinitionAndRegistry> parentMatched;
 
 	public TaxonomySearch() {
 		super();
 	}
 
-	public TaxonomySearch(List<TaxonomyDefinition> matched,
-			Map<Long, List<TaxonomyRegistryResponse>> partiallyMatchedRegistry) {
+	public TaxonomySearch(List<TaxonomyDefinitionAndRegistry> matched,
+			List<TaxonomyDefinitionAndRegistry> parentMatched) {
 		super();
 		this.matched = matched;
-		this.partiallyMatchedRegistry = partiallyMatchedRegistry;
+		this.parentMatched = parentMatched;
 	}
 
-	public List<TaxonomyDefinition> getMatched() {
+	public List<TaxonomyDefinitionAndRegistry> getMatched() {
 		return matched;
 	}
 
-	public void setMatched(List<TaxonomyDefinition> matched) {
+	public void setMatched(List<TaxonomyDefinitionAndRegistry> matched) {
 		this.matched = matched;
 	}
 
-	public Map<Long, List<TaxonomyRegistryResponse>> getPartiallyMatchedRegistry() {
-		return partiallyMatchedRegistry;
+	public List<TaxonomyDefinitionAndRegistry> getParentMatched() {
+		return parentMatched;
 	}
 
-	public void setPartiallyMatchedRegistry(Map<Long, List<TaxonomyRegistryResponse>> partiallyMatchedRegistry) {
-		this.partiallyMatchedRegistry = partiallyMatchedRegistry;
+	public void setParentMatched(List<TaxonomyDefinitionAndRegistry> parentMatched) {
+		this.parentMatched = parentMatched;
 	}
 
 }
