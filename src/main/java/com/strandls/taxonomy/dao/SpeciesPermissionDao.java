@@ -14,6 +14,7 @@ import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.strandls.taxonomy.TreeRoles;
 import com.strandls.taxonomy.pojo.SpeciesPermission;
 import com.strandls.taxonomy.util.AbstractDAO;
 
@@ -67,9 +68,26 @@ public class SpeciesPermissionDao extends AbstractDAO<SpeciesPermission, Long> {
 
 	}
 
-	public boolean checkPermission(Long userId, Long taxonId) {
-		
-		return false;
+	@SuppressWarnings("unchecked")
+	public Boolean checkPermission(Long userId, Long taxonId, TreeRoles role) {
+		String qry = "from SpeciesPermission where authorId = :userId and taxonConceptId = :taxonId and permissionType = :role";
+		Session session = sessionFactory.openSession();
+		Boolean result = false;
+		try {
+			Query<SpeciesPermission> query = session.createQuery(qry);
+			query.setParameter("userId", userId);
+			query.setParameter("taxonId", taxonId);
+			query.setParameter("role", role.getValue());
+			SpeciesPermission dataRow = null;
+			dataRow = query.getSingleResult();
+			if (dataRow != null)
+				result = true;
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return result;
 	}
 
 }

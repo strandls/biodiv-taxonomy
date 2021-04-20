@@ -43,7 +43,8 @@ public interface TaxonomyDefinitionSerivce {
 	public List<TaxonomyDefinition> updateAddSynonym(HttpServletRequest request, Long speciesId, Long taxonId,
 			SynonymData synonymData);
 
-	public Boolean deleteSynonym(HttpServletRequest request, Long speciesId, Long taxonId, Long synonymId);
+	public List<TaxonomyDefinition> deleteSynonym(HttpServletRequest request, Long speciesId, Long taxonId,
+			Long synonymId);
 
 	public TaxonomySearch getByNameSearch(String scientificName, String rankName) throws ApiException;
 

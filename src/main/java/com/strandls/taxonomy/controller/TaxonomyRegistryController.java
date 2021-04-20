@@ -38,7 +38,7 @@ public class TaxonomyRegistryController {
 
 	@Inject
 	private TaxonomyRegistryService taxonomyRegistry;
-	
+
 	@GET
 	@Path(ApiConstants.BREADCRUMB + "/{taxonomyId}")
 	@Consumes(MediaType.TEXT_PLAIN)
@@ -84,37 +84,55 @@ public class TaxonomyRegistryController {
 			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
 		}
 	}
-	
+
 	/**
 	 * 
-	 * @param parent
-	 *            dummy
-	 * @param classificationId
-	 *            dummy
-	 * @param taxonIds
-	 *            dummy
-	 * @param expand_taxon
-	 *            dummy
+	 * @param parent           dummy
+	 * @param classificationId dummy
+	 * @param taxonIds         dummy
+	 * @param expand_taxon     dummy
 	 * @return dummy method is responsible for displaying taxon list
 	 */
 	@GET
 	@Path("/list")
 	@Transactional
 	@Produces(MediaType.APPLICATION_JSON)
-	
+
 	@ApiOperation(value = "Get taxon relationship", notes = "Returns a taxon relationship", response = TaxonRelation.class, responseContainer = "List")
 	@ApiResponses(value = {
 			@ApiResponse(code = 400, message = "unable to fetch the taxon relationship", response = String.class) })
-	public Response list(@QueryParam("parent") Long parent,
-			@QueryParam("classification") Long classificationId, @QueryParam("taxonIds") String taxonIds,
+	public Response list(@QueryParam("parent") Long parent, @QueryParam("classification") Long classificationId,
+			@QueryParam("taxonIds") String taxonIds,
 			@DefaultValue("false") @QueryParam("expand_taxon") Boolean expandTaxon) {
 		try {
 			List<TaxonRelation> result = taxonomyRegistry.list(parent, taxonIds, expandTaxon);
 			return Response.status(Status.OK).entity(result).build();
 
-		}  catch (Exception e) {
+		} catch (Exception e) {
 			throw new WebApplicationException(
 					Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
+		}
+	}
+
+	@GET
+	@Path(ApiConstants.PERMISSION + ApiConstants.SPECIES + "/{taxonId}")
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ValidateUser
+
+	@ApiOperation(value = "check the permission on taxon tree for speciesContributor role", notes = "Return boolean value", response = Boolean.class)
+	@ApiResponses(value = {
+			@ApiResponse(code = 400, message = "unable to check the permission", response = String.class) })
+
+	public Response getPermissionSpeciesTree(@Context HttpServletRequest request,
+			@PathParam("taxonId") String taxonId) {
+		try {
+			Long taxonomyId = Long.parseLong(taxonId);
+			Boolean result = taxonomyRegistry.getPermissionOnTree(request, taxonomyId);
+			return Response.status(Status.OK).entity(result).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
 		}
 	}
 }

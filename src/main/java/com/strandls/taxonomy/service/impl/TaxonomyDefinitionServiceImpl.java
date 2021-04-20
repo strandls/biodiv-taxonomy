@@ -590,7 +590,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	}
 
 	@Override
-	public Boolean deleteSynonym(HttpServletRequest request, Long speciesId, Long taxonId, Long synonymId) {
+	public List<TaxonomyDefinition> deleteSynonym(HttpServletRequest request, Long speciesId, Long taxonId,
+			Long synonymId) {
 		try {
 			AcceptedSynonym acceptedSynonym = acceptedSynonymDao.findByAccpetedIdSynonymId(taxonId, synonymId);
 			acceptedSynonymDao.delete(acceptedSynonym);
@@ -602,11 +603,11 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 			logActivity.LogActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId, "species",
 					taxnomyDefinition.getId(), "Deleted synonym", null);
-			return true;
+			return findSynonyms(taxonId);
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
-		return false;
+		return null;
 	}
 
 	@SuppressWarnings("unchecked")

@@ -5,8 +5,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.google.inject.Inject;
+import javax.inject.Inject;
+import javax.servlet.http.HttpServletRequest;
+
+import org.pac4j.core.profile.CommonProfile;
+
+import com.strandls.authentication_utility.util.AuthUtil;
+import com.strandls.taxonomy.TreeRoles;
 import com.strandls.taxonomy.dao.AcceptedSynonymDao;
+import com.strandls.taxonomy.dao.SpeciesPermissionDao;
 import com.strandls.taxonomy.dao.TaxonomyDefinitionDao;
 import com.strandls.taxonomy.dao.TaxonomyRegistryDao;
 import com.strandls.taxonomy.pojo.AcceptedSynonym;
@@ -38,6 +45,9 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 
 	@Inject
 	private TaxonomyDefinitionDao taxonomyDefinitionDao;
+
+	@Inject
+	private SpeciesPermissionDao speciesPermissionDao;
 
 	@Inject
 	public TaxonomyRegistryServiceImpl(TaxonomyRegistryDao dao) {
@@ -82,7 +92,7 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 	@Override
 	public List<TaxonRelation> list(Long parent, String taxonIds, boolean expandTaxon) {
 		List<Long> taxonID;
-		if(taxonIds == null || "".equals(taxonIds.trim())) {
+		if (taxonIds == null || "".equals(taxonIds.trim())) {
 			taxonID = null;
 		} else {
 			taxonID = new ArrayList<Long>();
@@ -172,18 +182,32 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 
 	/**
 	 * 
-	 * @param res
-	 *            dummy
+	 * @param res dummy
 	 * @return dummy
 	 */
 	private List<TaxonRelation> createInputItems(List<Map<String, Object>> res) {
 		List<TaxonRelation> result = new ArrayList<>();
 		for (Map<String, Object> data : res) {
-			result.add(new TaxonRelation(Long.parseLong((String) data.get(taxonid)), (String) data.get(path), (Long.parseLong((String) data.get(parent))),
-					(String) data.get(text), Long.parseLong((String) data.get(classification)), (Long.parseLong((String) data.get(ID))),
-					(String) data.get(rank), (String) data.get(position),
-					(List<String>) data.get(totalPath)));
+			result.add(new TaxonRelation(Long.parseLong((String) data.get(taxonid)), (String) data.get(path),
+					(Long.parseLong((String) data.get(parent))), (String) data.get(text),
+					Long.parseLong((String) data.get(classification)), (Long.parseLong((String) data.get(ID))),
+					(String) data.get(rank), (String) data.get(position), (List<String>) data.get(totalPath)));
 		}
 		return result;
+	}
+
+	@Override
+	public Boolean getPermissionOnTree(HttpServletRequest request, Long taxonId) {
+		CommonProfile profile = AuthUtil.getProfileFromRequest(request);
+		Long userId = Long.parseLong(profile.getId());
+		List<BreadCrumb> breadcrumbs = fetchByTaxonomyId(taxonId);
+		Boolean permission = false;
+		for (BreadCrumb crumb : breadcrumbs) {
+			permission = speciesPermissionDao.checkPermission(userId, crumb.getId(), TreeRoles.SPECIESCONTRIBUTOR);
+			if (permission)
+				break;
+		}
+
+		return permission;
 	}
 }

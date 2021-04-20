@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Set;
 
 import com.google.inject.Inject;
+import com.strandls.taxonomy.TreeRoles;
 import com.strandls.taxonomy.dao.SpeciesGroupDao;
 import com.strandls.taxonomy.dao.SpeciesGroupMappingDao;
 import com.strandls.taxonomy.dao.SpeciesPermissionDao;
@@ -28,17 +29,17 @@ public class SpeciesGroupServiceImpl extends AbstractService<SpeciesGroup> imple
 
 	@Inject
 	private TaxonomyRegistryDao taxonomyRegistryDao;
-	
+
 	@Inject
 	public SpeciesGroupServiceImpl(SpeciesGroupDao dao) {
 		super(dao);
 	}
-	
+
 	@Override
 	public SpeciesGroupMapping save(SpeciesGroupMapping speciesGroupMapping) {
 		return speciesMappingDao.save(speciesGroupMapping);
 	}
-	
+
 	@Override
 	public SpeciesPermission save(SpeciesPermission speciesPermission) {
 		return speciesPermissionDao.save(speciesPermission);
@@ -48,10 +49,10 @@ public class SpeciesGroupServiceImpl extends AbstractService<SpeciesGroup> imple
 	public List<String> fetchBySpeciesGroupId(Long id, List<String> traitTaxonList) {
 		Set<String> speciesGroupTaxons = speciesMappingDao.getTaxonIds(id);
 		traitTaxonList.addAll(speciesGroupTaxons);
-		if(traitTaxonList.isEmpty()) 
+		if (traitTaxonList.isEmpty())
 			return new ArrayList<String>();
 		List<Long> traitTaxonIds = new ArrayList<Long>();
-		for(String taxonId : traitTaxonList)
+		for (String taxonId : traitTaxonList)
 			traitTaxonIds.add(Long.parseLong(taxonId));
 		List<String> result = taxonomyRegistryDao.findByTaxonIdOnTraitList(traitTaxonIds, speciesGroupTaxons);
 		traitTaxonList.retainAll(result);
@@ -67,10 +68,10 @@ public class SpeciesGroupServiceImpl extends AbstractService<SpeciesGroup> imple
 	public List<SpeciesPermission> getSpeciesPermissions(Long userId) {
 		return speciesPermissionDao.findByUserId(userId);
 	}
-	
+
 	@Override
-	public boolean checkPermission(Long userId, Long taxonId) {
-		return speciesPermissionDao.checkPermission(userId, taxonId);
+	public Boolean checkPermission(Long userId, Long taxonId, TreeRoles roles) {
+		return speciesPermissionDao.checkPermission(userId, taxonId, roles);
 	}
 
 }

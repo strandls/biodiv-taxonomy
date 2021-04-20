@@ -225,7 +225,7 @@ public class TaxonomyDefinitionController {
 
 	@ValidateUser
 
-	@ApiOperation(value = "delete synonyms", notes = "return boolean", response = Boolean.class)
+	@ApiOperation(value = "delete synonyms", notes = "return list of avaible synonyms", response = TaxonomyDefinition.class, responseContainer = "List")
 	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to delete the names", response = String.class) })
 
 	public Response removeSynonyms(@Context HttpServletRequest request, @PathParam("speciesId") String speciesId,
@@ -234,7 +234,7 @@ public class TaxonomyDefinitionController {
 			Long sId = Long.parseLong(speciesId);
 			Long tId = Long.parseLong(taxonId);
 			Long synonId = Long.parseLong(synonymId);
-			Boolean result = taxonomyService.deleteSynonym(request, sId, tId, synonId);
+			List<TaxonomyDefinition> result = taxonomyService.deleteSynonym(request, sId, tId, synonId);
 			return Response.status(Status.OK).entity(result).build();
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();

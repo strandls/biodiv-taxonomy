@@ -2,6 +2,7 @@ package com.strandls.taxonomy.service;
 
 import java.util.List;
 
+import com.strandls.taxonomy.TreeRoles;
 import com.strandls.taxonomy.pojo.SpeciesGroup;
 import com.strandls.taxonomy.pojo.SpeciesGroupMapping;
 import com.strandls.taxonomy.pojo.SpeciesPermission;
@@ -12,7 +13,7 @@ import com.strandls.taxonomy.pojo.SpeciesPermission;
  *
  */
 public interface SpeciesGroupService {
-	
+
 	public List<String> fetchBySpeciesGroupId(Long id, List<String> taxonList);
 
 	public List<SpeciesGroup> findAllSpecies();
@@ -25,6 +26,6 @@ public interface SpeciesGroupService {
 
 	public SpeciesPermission save(SpeciesPermission speciesPermission);
 
-	public boolean checkPermission(Long userId, Long taxonId);
+	public Boolean checkPermission(Long userId, Long taxonId, TreeRoles roles);
 
 }
