@@ -23,5 +23,6 @@ public class TaxonomyDaoModule extends AbstractModule {
 		bind(SpeciesPermissionDao.class).in(Scopes.SINGLETON);
 		bind(RankDao.class).in(Scopes.SINGLETON);
 		bind(CommonNameDao.class).in(Scopes.SINGLETON);
+		bind(SpeciesPermissionRequestDao.class).in(Scopes.SINGLETON);
 	}
 }

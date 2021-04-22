@@ -114,25 +114,4 @@ public class TaxonomyRegistryController {
 		}
 	}
 
-	@GET
-	@Path(ApiConstants.PERMISSION + ApiConstants.SPECIES + "/{taxonId}")
-	@Consumes(MediaType.TEXT_PLAIN)
-	@Produces(MediaType.APPLICATION_JSON)
-
-	@ValidateUser
-
-	@ApiOperation(value = "check the permission on taxon tree for speciesContributor role", notes = "Return boolean value", response = Boolean.class)
-	@ApiResponses(value = {
-			@ApiResponse(code = 400, message = "unable to check the permission", response = String.class) })
-
-	public Response getPermissionSpeciesTree(@Context HttpServletRequest request,
-			@PathParam("taxonId") String taxonId) {
-		try {
-			Long taxonomyId = Long.parseLong(taxonId);
-			Boolean result = taxonomyRegistry.getPermissionOnTree(request, taxonomyId);
-			return Response.status(Status.OK).entity(result).build();
-		} catch (Exception e) {
-			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
-		}
-	}
 }

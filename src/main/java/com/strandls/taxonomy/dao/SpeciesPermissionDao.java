@@ -69,6 +69,24 @@ public class SpeciesPermissionDao extends AbstractDAO<SpeciesPermission, Long> {
 	}
 
 	@SuppressWarnings("unchecked")
+	public SpeciesPermission findPermissionOntaxon(Long userId, Long taxonId) {
+		String qry = "from SpeciesPermission where authorId = :userId and taxonConceptId = :taxonId";
+		Session session = sessionFactory.openSession();
+		SpeciesPermission result = null;
+		try {
+			Query<SpeciesPermission> query = session.createQuery(qry);
+			query.setParameter("userId", userId);
+			query.setParameter("taxonId", taxonId);
+			result = query.getSingleResult();
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return result;
+	}
+
+	@SuppressWarnings("unchecked")
 	public Boolean checkPermission(Long userId, Long taxonId, TreeRoles role) {
 		String qry = "from SpeciesPermission where authorId = :userId and taxonConceptId = :taxonId and permissionType = :role";
 		Session session = sessionFactory.openSession();

@@ -9,6 +9,7 @@ import com.strandls.taxonomy.service.CommonNameSerivce;
 import com.strandls.taxonomy.service.RankSerivce;
 import com.strandls.taxonomy.service.SpeciesGroupService;
 import com.strandls.taxonomy.service.TaxonomyDefinitionSerivce;
+import com.strandls.taxonomy.service.TaxonomyPermisisonService;
 import com.strandls.taxonomy.service.TaxonomyRegistryService;
 
 /**
@@ -26,5 +27,6 @@ public class TaxonomyServiceModule extends AbstractModule {
 		bind(CommonNameSerivce.class).to(CommonNameServiceImpl.class).in(Scopes.SINGLETON);
 		bind(TaxonomyESUpdate.class).in(Scopes.SINGLETON);
 		bind(LogActivities.class).in(Scopes.SINGLETON);
+		bind(TaxonomyPermisisonService.class).to(TaxonomyPermissionServiceImpl.class).in(Scopes.SINGLETON);
 	}
 }

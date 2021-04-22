@@ -19,5 +19,6 @@ public class TaxonomyControllerModule extends AbstractModule {
 		bind(SpeciesGroupController.class).in(Scopes.SINGLETON);
 		bind(TaxonomyRegistryController.class).in(Scopes.SINGLETON);
 		bind(CommonNameController.class).in(Scopes.SINGLETON);
+		bind(TaxonomyPermissionController.class).in(Scopes.SINGLETON);
 	}
 }

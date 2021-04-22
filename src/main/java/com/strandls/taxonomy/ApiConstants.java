@@ -26,4 +26,8 @@ public class ApiConstants {
 	public static final String COMMONNAME = "/commoName";
 	public static final String REMOVE = "/remove";
 	public static final String SYNONYM = "/synonym";
+	public static final String ASSIGN = "/assign";
+	public static final String REQUEST = "/request";
+	public static final String GRANT = "/grant";
+
 }

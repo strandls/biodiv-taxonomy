@@ -28,15 +28,21 @@ import org.hibernate.cfg.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
 import com.google.inject.servlet.GuiceServletContextListener;
 import com.google.inject.servlet.ServletModule;
+import com.rabbitmq.client.Channel;
 import com.strandls.activity.controller.ActivitySerivceApi;
+import com.strandls.mail_utility.producer.RabbitMQProducer;
 import com.strandls.taxonomy.controller.TaxonomyControllerModule;
 import com.strandls.taxonomy.dao.TaxonomyDaoModule;
 import com.strandls.taxonomy.service.impl.TaxonomyServiceModule;
+import com.strandls.taxonomy.util.EncryptionUtils;
+import com.strandls.taxonomy.util.MailUtils;
+import com.strandls.user.controller.UserServiceApi;
 import com.strandls.utility.controller.LanguageServiceApi;
 
 /**
@@ -68,6 +74,22 @@ public class TaxonomyServeletContextListener extends GuiceServletContextListener
 				configuration = configuration.configure();
 				SessionFactory sessionFactory = configuration.buildSessionFactory();
 
+//				Rabbit MQ initialization
+				RabbitMqConnection rabbitConnetion = new RabbitMqConnection();
+				Channel channel = null;
+				try {
+					channel = rabbitConnetion.setRabbitMQConnetion();
+				} catch (Exception e) {
+					logger.error(e.getMessage());
+				}
+
+				bind(Channel.class).toInstance(channel);
+				RabbitMQProducer producer = new RabbitMQProducer(channel);
+				bind(RabbitMQProducer.class).toInstance(producer);
+
+				ObjectMapper om = new ObjectMapper();
+				bind(ObjectMapper.class).toInstance(om);
+
 				Map<String, String> props = new HashMap<String, String>();
 				props.put("javax.ws.rs.Application", ApplicationConfig.class.getName());
 				props.put("jersey.config.server.provider.packages", "com");
@@ -77,6 +99,9 @@ public class TaxonomyServeletContextListener extends GuiceServletContextListener
 				bind(SessionFactory.class).toInstance(sessionFactory);
 				bind(ActivitySerivceApi.class).in(Scopes.SINGLETON);
 				bind(Headers.class).in(Scopes.SINGLETON);
+				bind(EncryptionUtils.class).in(Scopes.SINGLETON);
+				bind(MailUtils.class).in(Scopes.SINGLETON);
+				bind(UserServiceApi.class).in(Scopes.SINGLETON);
 				bind(ServletContainer.class).in(Scopes.SINGLETON);
 
 				serve("/api/*").with(ServletContainer.class, props);

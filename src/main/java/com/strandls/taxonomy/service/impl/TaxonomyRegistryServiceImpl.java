@@ -6,12 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
 
-import org.pac4j.core.profile.CommonProfile;
-
-import com.strandls.authentication_utility.util.AuthUtil;
-import com.strandls.taxonomy.TreeRoles;
 import com.strandls.taxonomy.dao.AcceptedSynonymDao;
 import com.strandls.taxonomy.dao.SpeciesPermissionDao;
 import com.strandls.taxonomy.dao.TaxonomyDefinitionDao;
@@ -196,18 +191,4 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 		return result;
 	}
 
-	@Override
-	public Boolean getPermissionOnTree(HttpServletRequest request, Long taxonId) {
-		CommonProfile profile = AuthUtil.getProfileFromRequest(request);
-		Long userId = Long.parseLong(profile.getId());
-		List<BreadCrumb> breadcrumbs = fetchByTaxonomyId(taxonId);
-		Boolean permission = false;
-		for (BreadCrumb crumb : breadcrumbs) {
-			permission = speciesPermissionDao.checkPermission(userId, crumb.getId(), TreeRoles.SPECIESCONTRIBUTOR);
-			if (permission)
-				break;
-		}
-
-		return permission;
-	}
 }
