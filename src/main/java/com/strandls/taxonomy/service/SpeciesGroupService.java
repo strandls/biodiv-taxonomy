@@ -27,4 +27,6 @@ public interface SpeciesGroupService {
 
 	public boolean checkPermission(Long userId, Long taxonId);
 
+	public SpeciesGroup getGroupByTaxonId(Long taxonId);
+
 }

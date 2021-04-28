@@ -35,6 +35,12 @@ public class SpeciesGroupServiceImpl extends AbstractService<SpeciesGroup> imple
 	}
 	
 	@Override
+	public SpeciesGroup getGroupByTaxonId(Long taxonId) {
+		Long speciesGroupId = speciesGroupDao.getGroupIdByTaxonId(taxonId);
+		return findById(speciesGroupId);
+	}
+	
+	@Override
 	public SpeciesGroupMapping save(SpeciesGroupMapping speciesGroupMapping) {
 		return speciesMappingDao.save(speciesGroupMapping);
 	}
