@@ -45,7 +45,7 @@ public class SpeciesGroupController {
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
 
-	@ApiOperation(value = "Find Group id from the given taxon id", notes = "Returns Group details", response = SpeciesGroup.class)
+	@ApiOperation(value = "Get species group from the given taxon id", notes = "Returns Group details", response = SpeciesGroup.class)
 	@ApiResponses(value = { @ApiResponse(code = 404, message = "Taxonomy not found", response = String.class) })
 
 	public Response getGroupId(@QueryParam("taxonId") Long taxonId) {

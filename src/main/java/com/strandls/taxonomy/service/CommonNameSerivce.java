@@ -25,4 +25,8 @@ public interface CommonNameSerivce {
 
 	public List<CommonName> addCommonNames(Long taxonConceptId, Map<Long, String[]> languageIdToCommonNames, String source);
 
+	public CommonName getPrefferedCommonName(Long taxonId);
+
+	public List<CommonName> fetchByTaxonId(Long taxonId);
+
 }

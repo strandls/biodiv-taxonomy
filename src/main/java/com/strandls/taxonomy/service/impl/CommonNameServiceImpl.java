@@ -27,6 +27,11 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 	public CommonName fetchById(Long id) {
 		return commonNameDao.findById(id);
 	}
+	
+	@Override
+	public List<CommonName> fetchByTaxonId(Long taxonId) {
+		return commonNameDao.getByPropertyWithCondtion("taxonConceptId", taxonId, "=", -1, -1);
+	}
 
 	@Override
 	public List<CommonName> getCommonName(Long languageId, Long taxonConceptId, String commonNameString) {
@@ -34,10 +39,20 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 	}
 	
 	@Override
+	public CommonName getPrefferedCommonName(Long taxonId) {
+		List<CommonName> commonNames = commonNameDao.getByPropertyWithCondtion("taxonConceptId", taxonId, "=", -1, -1);
+		for(CommonName commonName : commonNames) {
+			if(commonName.isPreffered()) 
+				return commonName;
+		}
+		return null;
+	}
+	
+	@Override
 	public CommonName updateIsPreffered(Long id) {
 		CommonName commonName = commonNameDao.findById(id);
 		Long taxonConceptId = commonName.getTaxonConceptId();
-		List<CommonName> commonNames = commonNameDao.getByPropertyWithCondtion("taxonConceptId", taxonConceptId.toString(), "=", -1, -1);
+		List<CommonName> commonNames = commonNameDao.getByPropertyWithCondtion("taxonConceptId", taxonConceptId, "=", -1, -1);
 		for(CommonName c : commonNames) {
 			c.setPreffered(false);
 			update(c);
