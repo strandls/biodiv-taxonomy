@@ -1,5 +1,7 @@
 package com.strandls.taxonomy.controller;
 
+import java.util.List;
+
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 import javax.websocket.server.PathParam;
@@ -51,6 +53,23 @@ public class CommonNameController {
 		}
 	}
 	
+	@GET
+	@Path("/taxon")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	
+	@ApiOperation(value = "Get the common name", notes = "Get the common name", response = CommonName.class)
+	@ApiResponses(value = { @ApiResponse(code = 404, message = "Could not find the common name", response = String.class) })
+	public Response getCommonNameForTaxonId(@Context HttpServletRequest request, @QueryParam("taxonId") Long taxonId) {
+		try {
+			List<CommonName> commonNames = commonNameService.fetchByTaxonId(taxonId);
+			return Response.ok().entity(commonNames).build();
+		} catch (Exception e) {
+			throw new WebApplicationException(
+					Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
+		}
+	}
+	
 	@POST
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
@@ -69,6 +88,23 @@ public class CommonNameController {
 		}
 	}
 	
+	@GET
+	@Path("preffered")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	
+	@ApiOperation(value = "Get the preffered common name over all for given taxon id", notes = "Return the common name", response = SpeciesGroup.class)
+	@ApiResponses(value = { @ApiResponse(code = 404, message = "Preffered common name is not set", response = String.class) })
+	public Response getPrefferedCommanName(@Context HttpServletRequest request, @QueryParam("taxonId") Long taxonId) {
+		try {
+			CommonName commonName = commonNameService.getPrefferedCommonName(taxonId);
+			return Response.ok().entity(commonName).build();
+		} catch (Exception e) {
+			throw new WebApplicationException(
+					Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
+		}
+	}
+	
 	@PUT
 	@Path("preffered")
 	@Consumes(MediaType.APPLICATION_JSON)
@@ -78,7 +114,7 @@ public class CommonNameController {
 	
 	@ApiOperation(value = "Update the preffered common name over all", notes = "Return the common name", response = SpeciesGroup.class)
 	@ApiResponses(value = { @ApiResponse(code = 404, message = "Could not set the common name to preffered", response = String.class) })
-	public Response updateIsPreffered(@QueryParam("commonNameId") Long id) {
+	public Response updateIsPreffered(@Context HttpServletRequest request, @QueryParam("commonNameId") Long id) {
 		try {
 			CommonName commonName = commonNameService.updateIsPreffered(id);
 			return Response.ok().entity(commonName).build();
