@@ -28,4 +28,6 @@ public interface SpeciesGroupService {
 
 	public Boolean checkPermission(Long userId, Long taxonId, TreeRoles roles);
 
+	public SpeciesGroup getGroupByTaxonId(Long taxonId);
+
 }

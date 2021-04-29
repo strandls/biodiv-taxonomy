@@ -39,6 +39,23 @@ public class SpeciesGroupController {
 	
 	@Inject
 	private SpeciesGroupService speciesGroupService;
+	
+	@GET
+	@Path("taxon")
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "Get species group from the given taxon id", notes = "Returns Group details", response = SpeciesGroup.class)
+	@ApiResponses(value = { @ApiResponse(code = 404, message = "Taxonomy not found", response = String.class) })
+
+	public Response getGroupId(@QueryParam("taxonId") Long taxonId) {
+		try {
+			SpeciesGroup speciesGroup = speciesGroupService.getGroupByTaxonId(taxonId);
+			return Response.status(Status.OK).entity(speciesGroup).build();
+		} catch (Exception e) {
+			return Response.status(Status.BAD_REQUEST).build();
+		}
+	}
 		
 	@POST
 	@Path(ApiConstants.GROUP)

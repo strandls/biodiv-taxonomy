@@ -34,6 +34,10 @@ public interface CommonNameSerivce {
 
 	public List<CommonName> removeCommonName(HttpServletRequest request, Long speciesId, Long commonNameId);
 
+	public List<CommonName> fetchCommonNameWithLangByTaxonId(Long taxonId);
+
+	public CommonName getPrefferedCommonName(Long taxonId);
+
 	public List<CommonName> fetchByTaxonId(Long taxonId);
 
 }

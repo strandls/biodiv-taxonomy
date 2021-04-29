@@ -47,16 +47,32 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 	}
 
 	@Override
+	public List<CommonName> fetchByTaxonId(Long taxonId) {
+		return commonNameDao.getByPropertyWithCondtion("taxonConceptId", taxonId, "=", -1, -1);
+	}
+
+	@Override
 	public List<CommonName> getCommonName(Long languageId, Long taxonConceptId, String commonNameString) {
 		return commonNameDao.getCommonName(languageId, taxonConceptId, commonNameString);
+	}
+
+	@Override
+	public CommonName getPrefferedCommonName(Long taxonId) {
+		List<CommonName> commonNames = commonNameDao.getByPropertyWithCondtion("taxonConceptId", taxonId, "=", -1, -1);
+		for (CommonName commonName : commonNames) {
+			if (commonName.isPreffered())
+				return commonName;
+		}
+		return null;
 	}
 
 	@Override
 	public CommonName updateIsPreffered(Long id) {
 		CommonName commonName = commonNameDao.findById(id);
 		Long taxonConceptId = commonName.getTaxonConceptId();
-		List<CommonName> commonNames = commonNameDao.getByPropertyWithCondtion("taxonConceptId",
-				taxonConceptId.toString(), "=", -1, -1);
+
+		List<CommonName> commonNames = commonNameDao.getByPropertyWithCondtion("taxonConceptId", taxonConceptId, "=",
+				-1, -1);
 		for (CommonName c : commonNames) {
 			c.setPreffered(false);
 			update(c);
@@ -137,7 +153,7 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 						"species", commonName.getId(), "Updated common name", null);
 
 			}
-			List<CommonName> result = fetchByTaxonId(commonNamesData.getTaxonConceptId());
+			List<CommonName> result = fetchCommonNameWithLangByTaxonId(commonNamesData.getTaxonConceptId());
 			return result;
 
 		} catch (Exception e) {
@@ -156,7 +172,7 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 			String desc = "Deleted common name : " + commonName.getName();
 			logActivity.LogActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId, "species",
 					commonName.getId(), "Deleted common name", null);
-			List<CommonName> result = fetchByTaxonId(commonName.getTaxonConceptId());
+			List<CommonName> result = fetchCommonNameWithLangByTaxonId(commonName.getTaxonConceptId());
 			return result;
 		} catch (Exception e) {
 			logger.error(e.getMessage());
@@ -165,7 +181,7 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 	}
 
 	@Override
-	public List<CommonName> fetchByTaxonId(Long taxonId) {
+	public List<CommonName> fetchCommonNameWithLangByTaxonId(Long taxonId) {
 
 		try {
 			List<CommonName> result = commonNameDao.findByTaxonId(taxonId);
