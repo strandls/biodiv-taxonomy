@@ -23,7 +23,6 @@ import com.strandls.authentication_utility.filter.ValidateUser;
 import com.strandls.taxonomy.ApiConstants;
 import com.strandls.taxonomy.pojo.CommonName;
 import com.strandls.taxonomy.pojo.CommonNamesData;
-import com.strandls.taxonomy.pojo.SpeciesGroup;
 import com.strandls.taxonomy.service.CommonNameSerivce;
 
 import io.swagger.annotations.Api;
@@ -62,7 +61,7 @@ public class CommonNameController {
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 
-	@ApiOperation(value = "Get the common name", notes = "Get the common name", response = CommonName.class)
+	@ApiOperation(value = "Get the common name", notes = "Get the common name", response = CommonName.class, responseContainer = "List")
 	@ApiResponses(value = {
 			@ApiResponse(code = 404, message = "Could not find the common name", response = String.class) })
 	public Response getCommonNameForTaxonId(@Context HttpServletRequest request, @QueryParam("taxonId") Long taxonId) {
@@ -81,7 +80,7 @@ public class CommonNameController {
 
 	@ValidateUser
 
-	@ApiOperation(value = "Add the common name", notes = "Save the common name", response = SpeciesGroup.class)
+	@ApiOperation(value = "Add the common name", notes = "Save the common name", response = CommonName.class)
 	@ApiResponses(value = { @ApiResponse(code = 404, message = "Could not add common name", response = String.class) })
 	public Response save(@Context HttpServletRequest request, @ApiParam("commonName") CommonName commonName) {
 		try {
@@ -98,7 +97,7 @@ public class CommonNameController {
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
 
-	@ApiOperation(value = "Get the preffered common name over all for given taxon id", notes = "Return the common name", response = SpeciesGroup.class)
+	@ApiOperation(value = "Get the preffered common name over all for given taxon id", notes = "Return the common name", response = CommonName.class)
 	@ApiResponses(value = {
 			@ApiResponse(code = 404, message = "Preffered common name is not set", response = String.class) })
 	public Response getPrefferedCommanName(@Context HttpServletRequest request, @QueryParam("taxonId") Long taxonId) {
@@ -118,8 +117,7 @@ public class CommonNameController {
 
 	@ValidateUser
 
-	@ApiOperation(value = "Update the preffered common name over all", notes = "Return the common name", response = SpeciesGroup.class)
-
+	@ApiOperation(value = "Update the preffered common name over all", notes = "Return the common name", response = CommonName.class)
 	@ApiResponses(value = {
 			@ApiResponse(code = 404, message = "Could not set the common name to preffered", response = String.class) })
 	public Response updateIsPreffered(@Context HttpServletRequest request, @QueryParam("commonNameId") Long id) {
