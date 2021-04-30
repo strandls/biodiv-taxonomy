@@ -479,7 +479,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	public TaxonomicNames findSynonymCommonName(Long taxonId) {
 
 		try {
-			List<CommonName> commonNames = commonNameSerivce.fetchByTaxonId(taxonId);
+			List<CommonName> commonNames = commonNameSerivce.fetchCommonNameWithLangByTaxonId(taxonId);
 			List<TaxonomyDefinition> synonymList = findSynonyms(taxonId);
 
 			TaxonomicNames result = new TaxonomicNames(commonNames, synonymList);
