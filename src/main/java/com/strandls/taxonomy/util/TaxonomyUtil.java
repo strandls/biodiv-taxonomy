@@ -31,6 +31,16 @@ public class TaxonomyUtil {
 	private TaxonomyUtil() {
 
 	}
+	
+	public static String getBinomialName(String canonicalName) {
+		String[] nameTokens = canonicalName.split(" ");
+		String binomialName;
+		if (nameTokens.length >= 2)
+			binomialName = nameTokens[0] + " " + nameTokens[1];
+		else
+			binomialName = canonicalName;
+		return binomialName;
+	}
 
 	public static Double getHighestInputRank(List<Rank> ranks, Map<String, String> inputRanks) {
 		Double highestRank = -1.0;

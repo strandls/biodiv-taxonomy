@@ -1,9 +1,7 @@
 package com.strandls.taxonomy.service.impl;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
-import java.util.Properties;
+import java.util.Map;
 
 import javax.inject.Inject;
 
@@ -17,6 +15,7 @@ import com.strandls.esmodule.ApiException;
 import com.strandls.esmodule.controllers.EsServicesApi;
 import com.strandls.esmodule.pojo.MapDocument;
 import com.strandls.esmodule.pojo.MapQueryResponse;
+import com.strandls.taxonomy.TaxonomyConfig;
 import com.strandls.taxonomy.pojo.TaxonomyESDocument;
 
 public class TaxonomyESUpdate {
@@ -32,18 +31,8 @@ public class TaxonomyESUpdate {
 	
 	public static String LEFT_OUTER_JOIN = "left outer join ";
 	
-	//private static String DB_NAME;
-	
-	static {
-		InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream("config.properties");
-		Properties properties = new Properties();
-		try {
-			properties.load(in);
-		} catch (IOException e) {
-			
-		}
-		//DB_NAME = properties.getProperty("language.db.name");
-	}
+	private final String ES_TAXONOMY_INDEX = "es.taxonomy.index";
+	private final String ES_TAXONOMY_TYPE  = "es.taxonomy.type";
 	
 	@Inject
 	public TaxonomyESUpdate() {}
@@ -54,13 +43,39 @@ public class TaxonomyESUpdate {
 			String esDocumentString = objectMapper.writeValueAsString(esDocument);
 			MapDocument doc = new MapDocument();
 			doc.setDocument(esDocumentString);
-			return  esServicesApi.create("extended_taxon_definition", "_doc", taxonIds.toString(), doc);
+			
+			String index = TaxonomyConfig.getString(ES_TAXONOMY_INDEX);
+			String type  = TaxonomyConfig.getString(ES_TAXONOMY_TYPE);
+			
+			return  esServicesApi.create(index, type, taxonIds.toString(), doc);
 		} catch (JsonProcessingException | ApiException e) {
 			e.printStackTrace();
 		}
 		return null;
 	}
 
+	public List<MapQueryResponse> bulkDocumentUpdateToElastic(Long taxonId, List<Map<String, Object>> properties) {
+		try {
+			String index = TaxonomyConfig.getString(ES_TAXONOMY_INDEX);
+			String type  = TaxonomyConfig.getString(ES_TAXONOMY_TYPE);
+			return esServicesApi.bulkUpdate(index, type, properties);
+		} catch (ApiException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	public MapQueryResponse pushDocumentUpdateToElastic(Long taxonId, Map<String, Object> properties) {
+		try {
+			String index = TaxonomyConfig.getString(ES_TAXONOMY_INDEX);
+			String type  = TaxonomyConfig.getString(ES_TAXONOMY_TYPE);
+			return esServicesApi.update(index, type, taxonId.toString(), properties);
+		} catch (ApiException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
 	private TaxonomyESDocument getESDocument(List<Long> taxonIds) {
 		Session session = sessionFactory.getCurrentSession();
 		session.beginTransaction();
@@ -109,4 +124,5 @@ public class TaxonomyESUpdate {
 		query.setParameterList("taxonIds", taxonIds);
 		return query.getSingleResult();
 	}
+
 }

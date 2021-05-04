@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import javax.inject.Inject;
+import javax.persistence.NoResultException;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
@@ -317,12 +318,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		if (parsedName == null || parsedName.getCanonicalName() == null)
 			throw new TaxonCreationException("Not valid name");
 		String canonicalName = parsedName.getCanonicalName().getFull();
-		String[] nameTokens = canonicalName.split(" ");
-		String binomialName;
-		if (nameTokens.length >= 2)
-			binomialName = nameTokens[0] + " " + nameTokens[1];
-		else
-			binomialName = canonicalName;
+		String binomialName = TaxonomyUtil.getBinomialName(canonicalName);
 		String italicisedForm = TaxonomyUtil.getItalicisedForm(parsedName, rankName);
 		Timestamp uploadTime = new Timestamp(new Date().getTime());
 		Long uploaderId = null;
@@ -655,5 +651,42 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		}
 
 		return taxonomySearch;
+	}
+	
+	@Override
+	public TaxonomyDefinition updateName(Long taxonId, String taxonName) throws ApiException {
+		TaxonomyDefinition taxonomyDefinition;
+		try {
+			taxonomyDefinition = findById(taxonId);
+		} catch (NoResultException e) {
+			throw new NoResultException("Not able to find the given taxon");
+		}
+		
+		ParsedName parsedName = utilityServiceApi.getNameParsed(taxonName);
+		
+		String name = parsedName.getVerbatim().trim();
+		String normalizedName = parsedName.getNormalized();
+		String canonicalName = parsedName.getCanonicalName().getFull();
+		String binomialForm = TaxonomyUtil.getBinomialName(canonicalName);
+		String italicisedForm = TaxonomyUtil.getItalicisedForm(parsedName, taxonomyDefinition.getRank());
+		String authorShip = parsedName.getAuthorship();
+		
+		taxonomyDefinition.setName(name);
+		taxonomyDefinition.setNormalizedForm(normalizedName);
+		taxonomyDefinition.setCanonicalForm(canonicalName);
+		taxonomyDefinition.setBinomialForm(binomialForm);
+		taxonomyDefinition.setItalicisedForm(italicisedForm);
+		taxonomyDefinition.setAuthorYear(authorShip);
+		
+		Map<String, Object> esPropertiesToUpdate = new HashMap<String, Object>();
+		esPropertiesToUpdate.put("name", name);
+		esPropertiesToUpdate.put("canonical_form", canonicalName);
+		esPropertiesToUpdate.put("italicised_form", italicisedForm);
+		
+		taxonomyESUpdate.pushDocumentUpdateToElastic(taxonId, esPropertiesToUpdate);
+		
+		
+		
+		return taxonomyDefinition;
 	}
 }

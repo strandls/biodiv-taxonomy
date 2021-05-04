@@ -48,4 +48,6 @@ public interface TaxonomyDefinitionSerivce {
 
 	public TaxonomySearch getByNameSearch(String scientificName, String rankName) throws ApiException;
 
+	public TaxonomyDefinition updateName(Long taxonId, String taxonName) throws ApiException;
+
 }
