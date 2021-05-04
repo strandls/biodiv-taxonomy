@@ -83,6 +83,7 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 		}
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public List<Object[]> search(String term) {
 		Session session = sessionFactory.openSession();
 		try {
@@ -99,6 +100,7 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 		return null;
 	}
 	
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public List<String> specificSearch(String term, Long taxonId) {
 		Session session = sessionFactory.openSession();
 		try {
@@ -108,8 +110,45 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 					" lower(name) like lower(:term)) t " + 
 					" left outer join accepted_synonym a " + 
 					" on t.id = a.synonym_id order by id ";
+			
 			Query query = session.createNativeQuery(sqlString);
 			query.setParameter("term", term.toLowerCase().trim());
+			if(taxonId != null)
+				query.setParameter("taxonId", taxonId);
+			return query.getResultList();
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return null;
+	}
+	
+	/**
+	 * This code is to get the hierarchy of all the child of given taxonId
+	 * @param taxonId - input taxonomy id
+	 * @return - hierarchy for all the children
+	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public List<Object[]> getAllChildWithHierarchy(Long taxonId) {
+		
+		Session session = sessionFactory.openSession();
+		try {
+			String sqlString = "select " +  
+					"cast(td_id as varchar)," +
+					"(" +
+					"select string_agg(td.name, ',') from " +
+					"(" +
+					"select tr2.taxon_definition_id from taxonomy_registry tr1, taxonomy_registry tr2 " +
+					"where tr1.path <@ tr2.path and tr1.path != tr2.path and tr1.taxon_definition_id = td_id " +
+					") tr " +
+					"left outer join taxonomy_definition td on tr.taxon_definition_id = td.id " +
+					") as hierarchy " +
+					"from ( " +
+					"select t2.taxon_definition_id td_id, t2.path from taxonomy_registry t1, taxonomy_registry t2 " +
+					"where t1.path @> t2.path and t1.path != t2.path and t1.taxon_definition_id = :taxonId " +
+					") t";
+			Query query = session.createNativeQuery(sqlString);
 			if(taxonId != null)
 				query.setParameter("taxonId", taxonId);
 			return query.getResultList();

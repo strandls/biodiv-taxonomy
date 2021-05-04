@@ -678,6 +678,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		taxonomyDefinition.setItalicisedForm(italicisedForm);
 		taxonomyDefinition.setAuthorYear(authorShip);
 		
+		taxonomyDefinition = taxonomyDao.update(taxonomyDefinition);
+		
 		Map<String, Object> esPropertiesToUpdate = new HashMap<String, Object>();
 		esPropertiesToUpdate.put("name", name);
 		esPropertiesToUpdate.put("canonical_form", canonicalName);
@@ -685,8 +687,27 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		
 		taxonomyESUpdate.pushDocumentUpdateToElastic(taxonId, esPropertiesToUpdate);
 		
-		
+		// Update the name for given taxon in hierarchy for all the children in elastic search
+		List<Map<String, Object>> childUpdate = getAllChildWithHierarchy(taxonId);
+		taxonomyESUpdate.bulkDocumentUpdateToElastic(childUpdate);
 		
 		return taxonomyDefinition;
+	}
+
+	private List<Map<String, Object>> getAllChildWithHierarchy(Long taxonId) {
+		List<Object[]> idToHierarchy = taxonomyDao.getAllChildWithHierarchy(taxonId);
+		List<Map<String, Object>> result = new ArrayList<Map<String,Object>>();
+		
+		for(Object[] row : idToHierarchy) {
+			String id = (String) row[0];
+			String hierarchy = (String) row[1];
+			
+			Map<String, Object> rowMap = new HashMap<String, Object>();
+			rowMap.put("id", id);
+			rowMap.put("hierarchy", hierarchy);
+			
+			result.add(rowMap);
+		}
+		return result;
 	}
 }

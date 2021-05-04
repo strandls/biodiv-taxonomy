@@ -54,7 +54,7 @@ public class TaxonomyESUpdate {
 		return null;
 	}
 
-	public List<MapQueryResponse> bulkDocumentUpdateToElastic(Long taxonId, List<Map<String, Object>> properties) {
+	public List<MapQueryResponse> bulkDocumentUpdateToElastic(List<Map<String, Object>> properties) {
 		try {
 			String index = TaxonomyConfig.getString(ES_TAXONOMY_INDEX);
 			String type  = TaxonomyConfig.getString(ES_TAXONOMY_TYPE);
