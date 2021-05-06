@@ -3,6 +3,7 @@
  */
 package com.strandls.taxonomy.controller;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -119,7 +120,7 @@ public class TaxonomyDefinitionController {
 	public Response saveTaxonomy(@Context HttpServletRequest request,
 			@ApiParam("taxonSave") TaxonomySave taxonomySave) {
 		try {
-			TaxonomyDefinition taxonomyDefinition = taxonomyService.save(request, taxonomySave);
+			Collection<TaxonomyDefinition> taxonomyDefinition = taxonomyService.save(request, taxonomySave);
 			return Response.status(Status.OK).entity(taxonomyDefinition).build();
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();

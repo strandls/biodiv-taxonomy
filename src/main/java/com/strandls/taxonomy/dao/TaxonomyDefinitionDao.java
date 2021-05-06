@@ -3,6 +3,7 @@
  */
 package com.strandls.taxonomy.dao;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,6 +16,7 @@ import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.strandls.taxonomy.TaxonomyConfig;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.util.AbstractDAO;
 
@@ -130,24 +132,11 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 	 * @return - hierarchy for all the children
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public List<Object[]> getAllChildWithHierarchy(Long taxonId) {
+	public List<BigInteger> getAllChildren(Long taxonId) {
 		
 		Session session = sessionFactory.openSession();
 		try {
-			String sqlString = "select " +  
-					"cast(td_id as varchar)," +
-					"(" +
-					"select string_agg(td.name, ',') from " +
-					"(" +
-					"select tr2.taxon_definition_id from taxonomy_registry tr1, taxonomy_registry tr2 " +
-					"where tr1.path <@ tr2.path and tr1.path != tr2.path and tr1.taxon_definition_id = td_id " +
-					") tr " +
-					"left outer join taxonomy_definition td on tr.taxon_definition_id = td.id " +
-					") as hierarchy " +
-					"from ( " +
-					"select t2.taxon_definition_id td_id, t2.path from taxonomy_registry t1, taxonomy_registry t2 " +
-					"where t1.path @> t2.path and t1.path != t2.path and t1.taxon_definition_id = :taxonId " +
-					") t";
+			String sqlString = TaxonomyConfig.fetchFileAsString("treeChildren.sql");
 			Query query = session.createNativeQuery(sqlString);
 			if(taxonId != null)
 				query.setParameter("taxonId", taxonId);
