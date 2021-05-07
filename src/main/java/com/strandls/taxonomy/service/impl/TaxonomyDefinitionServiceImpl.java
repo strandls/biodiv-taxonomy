@@ -10,7 +10,6 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -120,17 +119,17 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			throws ApiException {
 		List<TaxonomyDefinition> taxonomyDefinitions = new ArrayList<TaxonomyDefinition>();
 		for (TaxonomySave taxonomySave : taxonomyList) {
-			Collection<TaxonomyDefinition> taxonomyDefinition = save(request, taxonomySave);
+			List<TaxonomyDefinition> taxonomyDefinition = save(request, taxonomySave);
 			taxonomyDefinitions.addAll(taxonomyDefinition);
 		}
 		return taxonomyDefinitions;
 	}
 
 	@Override
-	public Collection<TaxonomyDefinition> save(HttpServletRequest request, TaxonomySave taxonomySave)
+	public List<TaxonomyDefinition> save(HttpServletRequest request, TaxonomySave taxonomySave)
 			throws ApiException {
 
-		Collection<TaxonomyDefinition> taxonomyDefinitions = addTaxonomyDefintionNodes(request, taxonomySave);
+		List<TaxonomyDefinition> taxonomyDefinitions = addTaxonomyDefintionNodes(request, taxonomySave);
 
 		List<Long> taxonIds = new ArrayList<Long>();
 		for (TaxonomyDefinition taxonomyDefinition : taxonomyDefinitions)
@@ -141,9 +140,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		return taxonomyDefinitions;
 	}
 
-	private Collection<TaxonomyDefinition> addTaxonomyDefintionNodes(HttpServletRequest request,
+	private List<TaxonomyDefinition> addTaxonomyDefintionNodes(HttpServletRequest request,
 			TaxonomySave taxonomySave) throws ApiException {
-		Collection<TaxonomyDefinition> createdTaxonomy;
+		List<TaxonomyDefinition> createdTaxonomy;
 		try {
 			createdTaxonomy = addNodes(request, taxonomySave);
 		} catch (TaxonCreationException e) {
@@ -156,7 +155,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		return createdTaxonomy;
 	}
 
-	private Collection<TaxonomyDefinition> addNodes(HttpServletRequest request, TaxonomySave taxonomySave)
+	private List<TaxonomyDefinition> addNodes(HttpServletRequest request, TaxonomySave taxonomySave)
 			throws ApiException, TaxonCreationException {
 
 		CommonProfile profile = AuthUtil.getProfileFromRequest(request);
@@ -458,7 +457,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				String[] data = it.next();
 				TaxonomySave taxonomySave = fileMetaData.readOneRow(utilityServiceApi, data);
 				if (taxonomySave != null) {
-					Collection<TaxonomyDefinition> createdTaxonomy = addTaxonomyDefintionNodes(request, taxonomySave);
+					List<TaxonomyDefinition> createdTaxonomy = addTaxonomyDefintionNodes(request, taxonomySave);
 					if (createdTaxonomy != null && !createdTaxonomy.isEmpty()) {
 						for (TaxonomyDefinition taxonomyDefinition : createdTaxonomy) {
 							if (taxonomyDefinition != null)
