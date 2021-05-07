@@ -159,7 +159,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 		CommonProfile profile = AuthUtil.getProfileFromRequest(request);
 		Long userId = Long.parseLong(profile.getId());
-		Map<String, TaxonomyDefinition> createdTaxonomy = new HashMap<String, TaxonomyDefinition>();
+		Map<String, TaxonomyDefinition> createdTaxonomy = new LinkedHashMap<String, TaxonomyDefinition>();
 
 		Map<String, String> constructedRanks = constructRanksForTheInput(request, taxonomySave, taxonomySave.getRank(),
 				taxonomySave.getScientificName());

@@ -4,7 +4,6 @@
 package com.strandls.taxonomy.service;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -29,7 +28,7 @@ public interface TaxonomyDefinitionSerivce {
 
 	public TaxonomyDefinition fetchById(Long id);
 
-	public Collection<TaxonomyDefinition> save(HttpServletRequest request, TaxonomySave taxonomySave) throws ApiException;
+	public List<TaxonomyDefinition> save(HttpServletRequest request, TaxonomySave taxonomySave) throws ApiException;
 
 	public List<TaxonomyDefinition> saveList(HttpServletRequest request, List<TaxonomySave> taxonomyList)
 			throws ApiException;
