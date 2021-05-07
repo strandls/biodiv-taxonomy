@@ -1,11 +1,11 @@
-select cast(id as varchar), name, canonical_form, italicised_form, rank, status, position, cast(path as varchar), hierarchy, accepted_ids, accepted_names, common_names, group_id, group_name from
+select id, name, canonical_form, italicised_form, rank, status, position, cast(path as varchar), hierarchy, accepted_ids, accepted_names, common_names, group_id, group_name from
 	(
 		select id, name, canonical_form, italicised_form, rank, status, position
 		from taxonomy_definition where is_deleted = false and id in (:taxonIds)
 	) TD
 	
 	left outer join
-		(select synonym_id, array_agg(accepted_id) as accepted_ids,array_agg(name) accepted_names from
+		(select synonym_id, array_agg(accepted_id) as accepted_ids, array_agg(name) as accepted_names from
 		(select synonym_id, accepted_id from accepted_synonym) A 
 		inner join (select id, name from taxonomy_definition) TA on TA.id = A.accepted_id group by synonym_id
 		) A 
@@ -25,7 +25,7 @@ select cast(id as varchar), name, canonical_form, italicised_form, rank, status,
 	on TD.id = TR.taxon_id
 	
 	left outer join
-		(select taxon_concept_id, cast((json_agg(row_to_json((SELECT t FROM (SELECT id ,name,language_id ,language_name,three_letter_code) t)))) as text) AS common_names
+		(select taxon_concept_id, json_agg(row_to_json((SELECT t FROM (SELECT id ,name,language_id ,language_name,three_letter_code) t))) AS common_names
 			from (
 				select id, name , taxon_concept_id,language_id,language_name,three_letter_code from 
 				(select id, name, language_id, taxon_concept_id from common_names where is_deleted = false and name !~ '^[0-9][0-9]|^[)`-]|^A$|^0$') CN 

@@ -209,6 +209,13 @@
 		    <artifactId>opencsv</artifactId>
 		    <version>5.3</version>
 		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/com.vladmihalcea/hibernate-types-52 -->
+		<dependency>
+			<groupId>com.vladmihalcea</groupId>
+			<artifactId>hibernate-types-52</artifactId>
+			<version>2.10.0</version>
+		</dependency>
 		
 		<dependency>
 		    <groupId>com.strandls.biodiv</groupId>

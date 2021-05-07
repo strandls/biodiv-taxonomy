@@ -36,6 +36,7 @@ public class TaxonomyESOperation {
 
 	private final String SQL_FILE = "extendedTaxonDefinition.sql";
 
+	
 	@Inject
 	public TaxonomyESOperation() {
 	}
@@ -57,11 +58,9 @@ public class TaxonomyESOperation {
 			String qryString = TaxonomyConfig.fetchFileAsString(SQL_FILE);
 
 			Query<TaxonomyESDocument> query = session.createNativeQuery(qryString, TaxonomyESDocument.class);
-
-			// Variable mentioned in the sql file
 			query.setParameterList("taxonIds", taxonIds);
 			List<TaxonomyESDocument> taxonomyESDocuments = query.getResultList();
-
+			
 			String index = TaxonomyConfig.getString(ES_TAXONOMY_INDEX);
 			String type = TaxonomyConfig.getString(ES_TAXONOMY_TYPE);
 
