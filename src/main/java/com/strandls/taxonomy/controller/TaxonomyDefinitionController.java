@@ -13,6 +13,7 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -118,7 +119,7 @@ public class TaxonomyDefinitionController {
 	public Response saveTaxonomy(@Context HttpServletRequest request,
 			@ApiParam("taxonSave") TaxonomySave taxonomySave) {
 		try {
-			TaxonomyDefinition taxonomyDefinition = taxonomyService.save(request, taxonomySave);
+			List<TaxonomyDefinition> taxonomyDefinition = taxonomyService.save(request, taxonomySave);
 			return Response.status(Status.OK).entity(taxonomyDefinition).build();
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build();
@@ -193,6 +194,25 @@ public class TaxonomyDefinitionController {
 			return Response.status(Status.OK).entity(result).build();
 		} catch (Exception e) {
 			return Response.status(Status.BAD_GATEWAY).entity(e.getMessage()).build();
+		}
+	}
+	
+	@PUT
+	@Path("name")
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+	
+	@ValidateUser
+	
+	@ApiOperation(value = "Update the name of taxonomy", notes="Update the name. input name should be scientific name", response = TaxonomyDefinition.class)
+	@ApiResponses(value = {@ApiResponse(code = 400, message = "failed to update the name of taxonomy definition", response = String.class)})
+	public Response updateName(@Context HttpServletRequest request, @QueryParam("taxonId") Long taxonId, @QueryParam("taxonName") String taxonName) {
+		try {
+			TaxonomyDefinition taxonomyDefinition = taxonomyService.updateName(taxonId, taxonName);
+			return Response.status(Status.OK).entity(taxonomyDefinition).build();
+		} catch (Exception e) {
+			throw new WebApplicationException(
+					Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
 	}
 

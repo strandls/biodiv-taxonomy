@@ -12,9 +12,11 @@ import javax.persistence.NoResultException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.query.Query;
+import org.hibernate.type.StandardBasicTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.strandls.taxonomy.TaxonomyConfig;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.util.AbstractDAO;
 
@@ -83,6 +85,7 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 		}
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public List<Object[]> search(String term) {
 		Session session = sessionFactory.openSession();
 		try {
@@ -99,6 +102,7 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 		return null;
 	}
 	
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public List<String> specificSearch(String term, Long taxonId) {
 		Session session = sessionFactory.openSession();
 		try {
@@ -108,8 +112,32 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 					" lower(name) like lower(:term)) t " + 
 					" left outer join accepted_synonym a " + 
 					" on t.id = a.synonym_id order by id ";
+			
 			Query query = session.createNativeQuery(sqlString);
 			query.setParameter("term", term.toLowerCase().trim());
+			if(taxonId != null)
+				query.setParameter("taxonId", taxonId);
+			return query.getResultList();
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return null;
+	}
+	
+	/**
+	 * This code is to get the hierarchy of all the child of given taxonId
+	 * @param taxonId - input taxonomy id
+	 * @return - hierarchy for all the children
+	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public List<Long> getAllChildren(Long taxonId) {
+		
+		Session session = sessionFactory.openSession();
+		try {
+			String sqlString = TaxonomyConfig.fetchFileAsString("treeChildren.sql");
+			Query query = session.createNativeQuery(sqlString).addScalar("taxon_definition_id", StandardBasicTypes.LONG);
 			if(taxonId != null)
 				query.setParameter("taxonId", taxonId);
 			return query.getResultList();

@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import javax.inject.Inject;
+import javax.persistence.NoResultException;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
@@ -43,6 +44,7 @@ import com.strandls.taxonomy.pojo.SynonymData;
 import com.strandls.taxonomy.pojo.TaxonomicNames;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.pojo.TaxonomyRegistry;
+import com.strandls.taxonomy.pojo.enumtype.ElasticOperation;
 import com.strandls.taxonomy.pojo.enumtype.TaxonomyPosition;
 import com.strandls.taxonomy.pojo.enumtype.TaxonomyStatus;
 import com.strandls.taxonomy.pojo.request.FileMetadata;
@@ -74,7 +76,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	private TaxonomyDefinitionDao taxonomyDao;
 
 	@Inject
-	private TaxonomyESUpdate taxonomyESUpdate;
+	private TaxonomyESOperation taxonomyESUpdate;
 
 	@Inject
 	private TaxonomyRegistryDao taxonomyRegistryDao;
@@ -116,30 +118,30 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			throws ApiException {
 		List<TaxonomyDefinition> taxonomyDefinitions = new ArrayList<TaxonomyDefinition>();
 		for (TaxonomySave taxonomySave : taxonomyList) {
-			TaxonomyDefinition taxonomyDefinition = save(request, taxonomySave);
-			taxonomyDefinitions.add(taxonomyDefinition);
+			List<TaxonomyDefinition> taxonomyDefinition = save(request, taxonomySave);
+			taxonomyDefinitions.addAll(taxonomyDefinition);
 		}
 		return taxonomyDefinitions;
 	}
 
 	@Override
-	public TaxonomyDefinition save(HttpServletRequest request, TaxonomySave taxonomySave) throws ApiException {
+	public List<TaxonomyDefinition> save(HttpServletRequest request, TaxonomySave taxonomySave)
+			throws ApiException {
 
-		TaxonomyDefinition taxonomyDefinition = addTaxonomyDefintionNodes(request, taxonomySave);
+		List<TaxonomyDefinition> taxonomyDefinitions = addTaxonomyDefintionNodes(request, taxonomySave);
 
-		if (taxonomyDefinition != null) {
-			Long taxonomyId = taxonomyDefinition.getId();
-			List<Long> taxonIds = new ArrayList<Long>();
-			taxonIds.add(taxonomyId);
-			taxonomyESUpdate.pushUpdateToElastic(taxonIds);
-		}
+		List<Long> taxonIds = new ArrayList<Long>();
+		for (TaxonomyDefinition taxonomyDefinition : taxonomyDefinitions)
+			taxonIds.add(taxonomyDefinition.getId());
 
-		return taxonomyDefinition;
+		taxonomyESUpdate.pushToElastic(taxonIds, ElasticOperation.CREATE);
+
+		return taxonomyDefinitions;
 	}
 
-	private TaxonomyDefinition addTaxonomyDefintionNodes(HttpServletRequest request, TaxonomySave taxonomySave)
-			throws ApiException {
-		Map<String, TaxonomyDefinition> createdTaxonomy;
+	private List<TaxonomyDefinition> addTaxonomyDefintionNodes(HttpServletRequest request,
+			TaxonomySave taxonomySave) throws ApiException {
+		List<TaxonomyDefinition> createdTaxonomy;
 		try {
 			createdTaxonomy = addNodes(request, taxonomySave);
 		} catch (TaxonCreationException e) {
@@ -149,10 +151,10 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		if (createdTaxonomy == null || createdTaxonomy.isEmpty())
 			return null;
 
-		return createdTaxonomy.get(taxonomySave.getRank().toLowerCase());
+		return createdTaxonomy;
 	}
 
-	private Map<String, TaxonomyDefinition> addNodes(HttpServletRequest request, TaxonomySave taxonomySave)
+	private List<TaxonomyDefinition> addNodes(HttpServletRequest request, TaxonomySave taxonomySave)
 			throws ApiException, TaxonCreationException {
 
 		CommonProfile profile = AuthUtil.getProfileFromRequest(request);
@@ -195,6 +197,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			acceptedTaxonomy = createdTaxonomy.get(taxonomySave.getRank().toLowerCase());
 		}
 		String synonyms = taxonomySave.getSynonyms();
+		List<TaxonomyDefinition> taxonomyDefinitions = new ArrayList<TaxonomyDefinition>();
+		taxonomyDefinitions.addAll(createdTaxonomy.values());
+
 		if (synonyms != null && !"".equals(synonyms.trim())
 				&& (acceptedTaxonomy != null && TaxonomyStatus.ACCEPTED.name().equals(acceptedTaxonomy.getStatus()))) {
 			Long acceptedId = acceptedTaxonomy.getId();
@@ -214,6 +219,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 						|| TaxonomyStatus.ACCEPTED.name().equalsIgnoreCase(synonymTaxonomy.getStatus())) {
 					synonymTaxonomy = createTaxonomyDefiniiton(parsedName, synonymRank, TaxonomyStatus.SYNONYM,
 							taxonomySave.getPosition(), taxonomySave.getSource(), taxonomySave.getSourceId(), userId);
+					taxonomyDefinitions.add(synonymTaxonomy);
 				}
 				Long synonymId = synonymTaxonomy.getId();
 				AcceptedSynonym acceptedSynonym = acceptedSynonymDao.findByAccpetedIdSynonymId(acceptedId, synonymId);
@@ -234,7 +240,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			Long taxonConceptId = acceptedTaxonomy.getId();
 			commonNameSerivce.addCommonNames(taxonConceptId, languageIdToCommonNames, source);
 		}
-		return createdTaxonomy;
+		return taxonomyDefinitions;
 	}
 
 	private TaxonomyCreationHierarchy getTaxonomyCreationHierarchy(Map<String, String> constructedRanks,
@@ -283,12 +289,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		TaxonomyDefinition taxonomyDefinition = taxonomyDao.findById(taxonId);
 
 		String canonicalName = parsedName.getCanonicalName().getFull();
-		String[] nameTokens = canonicalName.split(" ");
-		String binomialName;
-		if (nameTokens.length >= 2)
-			binomialName = nameTokens[0] + " " + nameTokens[1];
-		else
-			binomialName = canonicalName;
+		String binomialName = TaxonomyUtil.getBinomialName(canonicalName);
 		String italicisedForm = TaxonomyUtil.getItalicisedForm(parsedName, rankName);
 		String status = taxonomyStatus.name();
 		String position = taxonomyPosition.name();
@@ -317,12 +318,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		if (parsedName == null || parsedName.getCanonicalName() == null)
 			throw new TaxonCreationException("Not valid name");
 		String canonicalName = parsedName.getCanonicalName().getFull();
-		String[] nameTokens = canonicalName.split(" ");
-		String binomialName;
-		if (nameTokens.length >= 2)
-			binomialName = nameTokens[0] + " " + nameTokens[1];
-		else
-			binomialName = canonicalName;
+		String binomialName = TaxonomyUtil.getBinomialName(canonicalName);
 		String italicisedForm = TaxonomyUtil.getItalicisedForm(parsedName, rankName);
 		Timestamp uploadTime = new Timestamp(new Date().getTime());
 		Long uploaderId = null;
@@ -455,18 +451,17 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				String[] data = it.next();
 				TaxonomySave taxonomySave = fileMetaData.readOneRow(utilityServiceApi, data);
 				if (taxonomySave != null) {
-					TaxonomyDefinition taxonomyDefinition = addTaxonomyDefintionNodes(request, taxonomySave);
-					if (taxonomyDefinition != null)
-						taxonIds.add(taxonomyDefinition.getId());
-					else {
-						// These taxonomy are not inserted.
-						// 1. May be already exists
-						// 2. throws exception here
+					List<TaxonomyDefinition> createdTaxonomy = addTaxonomyDefintionNodes(request, taxonomySave);
+					if (createdTaxonomy != null && !createdTaxonomy.isEmpty()) {
+						for (TaxonomyDefinition taxonomyDefinition : createdTaxonomy) {
+							if (taxonomyDefinition != null)
+								taxonIds.add(taxonomyDefinition.getId());
+						}
 					}
 				}
 			}
 			if (!taxonIds.isEmpty()) {
-				taxonomyESUpdate.pushUpdateToElastic(taxonIds);
+				taxonomyESUpdate.pushToElastic(taxonIds, ElasticOperation.CREATE);
 			}
 			reader.close();
 		}
@@ -633,11 +628,13 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				if (!taxonomyDefinitions.isEmpty()) {
 					// Taking the first one to auto Fill
 					List<TaxonomyDefinitionAndRegistry> parentMatched = new ArrayList<TaxonomyDefinitionAndRegistry>();
-					//Map<Long, List<TaxonomyRegistryResponse>> parentMatched = new HashMap<Long, List<TaxonomyRegistryResponse>>();
+					// Map<Long, List<TaxonomyRegistryResponse>> parentMatched = new HashMap<Long,
+					// List<TaxonomyRegistryResponse>>();
 					for (TaxonomyDefinition taxonomyDefinition : taxonomyDefinitions) {
 						List<TaxonomyRegistryResponse> taxonomyRegistry = taxonomyRegistryDao
 								.getPathToRoot(taxonomyDefinition.getId());
-						TaxonomyDefinitionAndRegistry taxonomyDefinitionAndRegistry = new TaxonomyDefinitionAndRegistry(taxonomyDefinition, taxonomyRegistry);
+						TaxonomyDefinitionAndRegistry taxonomyDefinitionAndRegistry = new TaxonomyDefinitionAndRegistry(
+								taxonomyDefinition, taxonomyRegistry);
 						parentMatched.add(taxonomyDefinitionAndRegistry);
 					}
 					taxonomySearch.setParentMatched(parentMatched);
@@ -645,15 +642,53 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			}
 		} else {
 			List<TaxonomyDefinitionAndRegistry> matched = new ArrayList<TaxonomyDefinitionAndRegistry>();
-			for(TaxonomyDefinition taxonomyDefinition : taxonomyDefinitions) {
+			for (TaxonomyDefinition taxonomyDefinition : taxonomyDefinitions) {
 				List<TaxonomyRegistryResponse> taxonomyRegistry = taxonomyRegistryDao
 						.getPathToRoot(taxonomyDefinition.getId());
-				TaxonomyDefinitionAndRegistry taxonomyDefinitionAndRegistry = new TaxonomyDefinitionAndRegistry(taxonomyDefinition, taxonomyRegistry);
+				TaxonomyDefinitionAndRegistry taxonomyDefinitionAndRegistry = new TaxonomyDefinitionAndRegistry(
+						taxonomyDefinition, taxonomyRegistry);
 				matched.add(taxonomyDefinitionAndRegistry);
 			}
 			taxonomySearch.setMatched(matched);
 		}
 
 		return taxonomySearch;
+	}
+
+	@Override
+	public TaxonomyDefinition updateName(Long taxonId, String taxonName) throws ApiException {
+		TaxonomyDefinition taxonomyDefinition;
+		try {
+			taxonomyDefinition = findById(taxonId);
+		} catch (NoResultException e) {
+			throw new NoResultException("Not able to find the given taxon");
+		}
+
+		ParsedName parsedName = utilityServiceApi.getNameParsed(taxonName);
+
+		String name = parsedName.getVerbatim().trim();
+		String normalizedName = parsedName.getNormalized();
+		String canonicalName = parsedName.getCanonicalName().getFull();
+		String binomialForm = TaxonomyUtil.getBinomialName(canonicalName);
+		String italicisedForm = TaxonomyUtil.getItalicisedForm(parsedName, taxonomyDefinition.getRank());
+		String authorShip = parsedName.getAuthorship();
+
+		taxonomyDefinition.setName(name);
+		taxonomyDefinition.setNormalizedForm(normalizedName);
+		taxonomyDefinition.setCanonicalForm(canonicalName);
+		taxonomyDefinition.setBinomialForm(binomialForm);
+		taxonomyDefinition.setItalicisedForm(italicisedForm);
+		taxonomyDefinition.setAuthorYear(authorShip);
+
+		taxonomyDefinition = taxonomyDao.update(taxonomyDefinition);
+
+		List<Long> taxonIds = taxonomyDao.getAllChildren(taxonId);
+
+		taxonomyESUpdate.pushToElastic(taxonIds, ElasticOperation.UPDATE);
+
+		logger.debug("Name update for the given taxonomy :" + taxonName);
+		logger.debug("Hierarchy update for all the children : " + taxonIds);
+
+		return taxonomyDefinition;
 	}
 }

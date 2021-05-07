@@ -28,7 +28,7 @@ public interface TaxonomyDefinitionSerivce {
 
 	public TaxonomyDefinition fetchById(Long id);
 
-	public TaxonomyDefinition save(HttpServletRequest request, TaxonomySave taxonomySave) throws ApiException;
+	public List<TaxonomyDefinition> save(HttpServletRequest request, TaxonomySave taxonomySave) throws ApiException;
 
 	public List<TaxonomyDefinition> saveList(HttpServletRequest request, List<TaxonomySave> taxonomyList)
 			throws ApiException;
@@ -47,5 +47,7 @@ public interface TaxonomyDefinitionSerivce {
 			Long synonymId);
 
 	public TaxonomySearch getByNameSearch(String scientificName, String rankName) throws ApiException;
+
+	public TaxonomyDefinition updateName(Long taxonId, String taxonName) throws ApiException;
 
 }

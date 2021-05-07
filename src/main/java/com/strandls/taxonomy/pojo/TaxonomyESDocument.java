@@ -1,12 +1,23 @@
 package com.strandls.taxonomy.pojo;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EntityResult;
 import javax.persistence.FieldResult;
 import javax.persistence.Id;
 import javax.persistence.SqlResultSetMapping;
 
+import org.hibernate.annotations.Type;
+import org.hibernate.annotations.TypeDef;
+import org.hibernate.annotations.TypeDefs;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.vladmihalcea.hibernate.type.array.ListArrayType;
+import com.vladmihalcea.hibernate.type.json.JsonStringType;
 
 @SqlResultSetMapping(name = "TaxonomyESDocumentMapping", entities = {
 		@EntityResult(entityClass = TaxonomyESDocument.class, fields = { @FieldResult(name = "id", column = "id"),
@@ -21,6 +32,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 				@FieldResult(name = "common_names", column = "common_names"),
 				@FieldResult(name = "group_id", column = "group_id"),
 				@FieldResult(name = "group_name", column = "group_name") }) })
+@TypeDefs({ @TypeDef(name = "jsonb", typeClass = JsonStringType.class),
+		@TypeDef(name = "list-array", typeClass = ListArrayType.class), })
 @Entity
 @JsonIgnoreProperties
 public class TaxonomyESDocument {
@@ -35,9 +48,19 @@ public class TaxonomyESDocument {
 	private String position;
 	private String path;
 	private String hierarchy;
-	private String accepted_ids;
-	private String accepted_names;
-	private String common_names;
+
+	@Type(type = "list-array")
+	@Column(columnDefinition = "bigint[]")
+	private List<Long> accepted_ids = new ArrayList<Long>();
+
+	@Type(type = "list-array")
+	@Column(columnDefinition = "text[]")
+	private List<String> accepted_names = new ArrayList<String>();
+
+	@Type(type = "jsonb")
+	@Column(columnDefinition = "json")
+	private List<JsonNode> common_names = new ArrayList<JsonNode>();
+
 	private Long group_id;
 	private String group_name;
 
@@ -46,8 +69,8 @@ public class TaxonomyESDocument {
 	}
 
 	public TaxonomyESDocument(Long id, String name, String canonical_form, String italicised_form, String rank,
-			String status, String position, String path, String hierarchy, String accepted_ids, String accepted_names,
-			String common_names, Long group_id, String group_name) {
+			String status, String position, String path, String hierarchy, List<Long> accepted_ids,
+			List<String> accepted_names, List<JsonNode> common_names, Long group_id, String group_name) {
 		super();
 		this.id = id;
 		this.name = name;
@@ -137,27 +160,27 @@ public class TaxonomyESDocument {
 		this.hierarchy = hierarchy;
 	}
 
-	public String getAccepted_ids() {
+	public List<Long> getAccepted_ids() {
 		return accepted_ids;
 	}
 
-	public void setAccepted_ids(String accepted_ids) {
+	public void setAccepted_ids(List<Long> accepted_ids) {
 		this.accepted_ids = accepted_ids;
 	}
 
-	public String getAccepted_names() {
+	public List<String> getAccepted_names() {
 		return accepted_names;
 	}
 
-	public void setAccepted_names(String accepted_names) {
+	public void setAccepted_names(List<String> accepted_names) {
 		this.accepted_names = accepted_names;
 	}
 
-	public String getCommon_names() {
+	public List<JsonNode> getCommon_names() {
 		return common_names;
 	}
 
-	public void setCommon_names(String common_names) {
+	public void setCommon_names(List<JsonNode> common_names) {
 		this.common_names = common_names;
 	}
 
@@ -176,4 +199,5 @@ public class TaxonomyESDocument {
 	public void setGroup_name(String group_name) {
 		this.group_name = group_name;
 	}
+
 }

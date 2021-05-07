@@ -22,6 +22,7 @@ public class ApiConstants {
 	public static final String CNAME = "/cname";
 	public static final String CHILDREN = "/children";
 	public static final String NAMES = "/names";
+	public static final String NAME = "name";
 	public static final String UPDATE = "/update";
 	public static final String COMMONNAME = "/commoName";
 	public static final String REMOVE = "/remove";
