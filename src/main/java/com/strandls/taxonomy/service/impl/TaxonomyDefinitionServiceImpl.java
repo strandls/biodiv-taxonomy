@@ -290,12 +290,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		TaxonomyDefinition taxonomyDefinition = taxonomyDao.findById(taxonId);
 
 		String canonicalName = parsedName.getCanonicalName().getFull();
-		String[] nameTokens = canonicalName.split(" ");
-		String binomialName;
-		if (nameTokens.length >= 2)
-			binomialName = nameTokens[0] + " " + nameTokens[1];
-		else
-			binomialName = canonicalName;
+		String binomialName = TaxonomyUtil.getBinomialName(canonicalName);
 		String italicisedForm = TaxonomyUtil.getItalicisedForm(parsedName, rankName);
 		String status = taxonomyStatus.name();
 		String position = taxonomyPosition.name();
