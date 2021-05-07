@@ -6,7 +6,6 @@ package com.strandls.taxonomy.service.impl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -683,14 +682,12 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 		taxonomyDefinition = taxonomyDao.update(taxonomyDefinition);
 
-		List<BigInteger> ids = taxonomyDao.getAllChildren(taxonId);
-		List<Long> taxonIds = new ArrayList<Long>();
-		for (BigInteger id : ids)
-			taxonIds.add(id.longValue());
+		List<Long> taxonIds = taxonomyDao.getAllChildren(taxonId);
 
 		taxonomyESUpdate.pushToElastic(taxonIds, ElasticOperation.UPDATE);
 
-		logger.debug("Hierarchy update for all the " + taxonIds);
+		logger.debug("Name update for the given taxonomy :" + taxonName);
+		logger.debug("Hierarchy update for all the children : " + taxonIds);
 
 		return taxonomyDefinition;
 	}

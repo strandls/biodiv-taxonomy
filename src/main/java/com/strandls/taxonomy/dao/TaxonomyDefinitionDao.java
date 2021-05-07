@@ -3,7 +3,6 @@
  */
 package com.strandls.taxonomy.dao;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,6 +12,7 @@ import javax.persistence.NoResultException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.query.Query;
+import org.hibernate.type.StandardBasicTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -132,12 +132,12 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 	 * @return - hierarchy for all the children
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	public List<BigInteger> getAllChildren(Long taxonId) {
+	public List<Long> getAllChildren(Long taxonId) {
 		
 		Session session = sessionFactory.openSession();
 		try {
 			String sqlString = TaxonomyConfig.fetchFileAsString("treeChildren.sql");
-			Query query = session.createNativeQuery(sqlString);
+			Query query = session.createNativeQuery(sqlString).addScalar("taxon_definition_id", StandardBasicTypes.LONG);
 			if(taxonId != null)
 				query.setParameter("taxonId", taxonId);
 			return query.getResultList();
