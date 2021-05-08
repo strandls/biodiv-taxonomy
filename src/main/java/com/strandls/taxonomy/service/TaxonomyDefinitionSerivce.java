@@ -28,7 +28,7 @@ public interface TaxonomyDefinitionSerivce {
 
 	public TaxonomyDefinition fetchById(Long id);
 
-	public List<TaxonomyDefinition> save(HttpServletRequest request, TaxonomySave taxonomySave) throws ApiException;
+	public TaxonomyDefinition save(HttpServletRequest request, TaxonomySave taxonomySave) throws ApiException;
 
 	public List<TaxonomyDefinition> saveList(HttpServletRequest request, List<TaxonomySave> taxonomyList)
 			throws ApiException;

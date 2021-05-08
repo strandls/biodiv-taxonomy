@@ -118,29 +118,37 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			throws ApiException {
 		List<TaxonomyDefinition> taxonomyDefinitions = new ArrayList<TaxonomyDefinition>();
 		for (TaxonomySave taxonomySave : taxonomyList) {
-			List<TaxonomyDefinition> taxonomyDefinition = save(request, taxonomySave);
-			taxonomyDefinitions.addAll(taxonomyDefinition);
+			TaxonomyDefinition taxonomyDefinition = save(request, taxonomySave);
+			taxonomyDefinitions.add(taxonomyDefinition);
 		}
 		return taxonomyDefinitions;
 	}
 
 	@Override
-	public List<TaxonomyDefinition> save(HttpServletRequest request, TaxonomySave taxonomySave)
-			throws ApiException {
+	public TaxonomyDefinition save(HttpServletRequest request, TaxonomySave taxonomySave) throws ApiException {
 
 		List<TaxonomyDefinition> taxonomyDefinitions = addTaxonomyDefintionNodes(request, taxonomySave);
 
+		TaxonomyDefinition taxonomyDefinition = null;
+		if (taxonomyDefinitions == null || taxonomyDefinitions.isEmpty())
+			return taxonomyDefinition;
+
 		List<Long> taxonIds = new ArrayList<Long>();
-		for (TaxonomyDefinition taxonomyDefinition : taxonomyDefinitions)
-			taxonIds.add(taxonomyDefinition.getId());
+		for (TaxonomyDefinition td : taxonomyDefinitions) {
+			taxonIds.add(td.getId());
+
+			if (td.getRank().equalsIgnoreCase(taxonomySave.getRank())
+					&& td.getStatus().equalsIgnoreCase(taxonomySave.getStatus().name()))
+				taxonomyDefinition = td;
+		}
 
 		taxonomyESUpdate.pushToElastic(taxonIds, ElasticOperation.CREATE);
 
-		return taxonomyDefinitions;
+		return taxonomyDefinition;
 	}
 
-	private List<TaxonomyDefinition> addTaxonomyDefintionNodes(HttpServletRequest request,
-			TaxonomySave taxonomySave) throws ApiException {
+	private List<TaxonomyDefinition> addTaxonomyDefintionNodes(HttpServletRequest request, TaxonomySave taxonomySave)
+			throws ApiException {
 		List<TaxonomyDefinition> createdTaxonomy;
 		try {
 			createdTaxonomy = addNodes(request, taxonomySave);
