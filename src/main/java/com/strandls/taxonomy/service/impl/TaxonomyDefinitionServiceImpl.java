@@ -44,12 +44,12 @@ import com.strandls.taxonomy.pojo.SynonymData;
 import com.strandls.taxonomy.pojo.TaxonomicNames;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.pojo.TaxonomyRegistry;
-import com.strandls.taxonomy.pojo.enumtype.ElasticOperation;
 import com.strandls.taxonomy.pojo.enumtype.TaxonomyPosition;
 import com.strandls.taxonomy.pojo.enumtype.TaxonomyStatus;
 import com.strandls.taxonomy.pojo.request.FileMetadata;
 import com.strandls.taxonomy.pojo.request.TaxonomyCreationHierarchy;
 import com.strandls.taxonomy.pojo.request.TaxonomySave;
+import com.strandls.taxonomy.pojo.request.TaxonomyStatusUpdate;
 import com.strandls.taxonomy.pojo.response.TaxonomyDefinitionAndRegistry;
 import com.strandls.taxonomy.pojo.response.TaxonomyRegistryResponse;
 import com.strandls.taxonomy.pojo.response.TaxonomySearch;
@@ -142,7 +142,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				taxonomyDefinition = td;
 		}
 
-		taxonomyESUpdate.pushToElastic(taxonIds, ElasticOperation.CREATE);
+		taxonomyESUpdate.pushToElastic(taxonIds);
 
 		return taxonomyDefinition;
 	}
@@ -267,9 +267,28 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			unmatchedRanks.addFirst(rankName);
 		}
 		TaxonomyCreationHierarchy taxonomyCreationHierarchy = new TaxonomyCreationHierarchy();
-		if (taxonomyDefinition == null) { // First entry without the ROOT element in definition and registry
+		// First entry without the ROOT element in definition and registry
+		if (taxonomyDefinition == null)
+			taxonomyDefinition = createRoot(unmatchedRanks);
+		
+		taxonomyCreationHierarchy.setMatchedRank(taxonomyDefinition.getRank());
+		taxonomyCreationHierarchy.setMatchedTaxonId(taxonomyDefinition.getId());
+		for (String unmatchedRank : unmatchedRanks) {
+			taxonomyCreationHierarchy.addUnmatchedNodeToCreate(unmatchedRank, rankToParsedName.get(unmatchedRank));
+		}
+		return taxonomyCreationHierarchy;
+	}
+	
+	/**
+	 * Root creation at the start of application. This is one time job 
+	 * Won't be executed after word
+	 * @return 
+	 * @throws ApiException 
+	 * @throws TaxonCreationException 
+	 */
+	private TaxonomyDefinition createRoot(LinkedList<String> unmatchedRanks) throws ApiException, TaxonCreationException {
 			ParsedName parsedName = utilityServiceApi.getNameParsed("Root");
-			taxonomyDefinition = createTaxonomyDefiniiton(parsedName, "root", TaxonomyStatus.ACCEPTED,
+			TaxonomyDefinition taxonomyDefinition = createTaxonomyDefiniiton(parsedName, "root", TaxonomyStatus.ACCEPTED,
 					TaxonomyPosition.CLEAN, null, null, null);
 			Long taxonomyDefinitionId = taxonomyDefinition.getId();
 			String path = taxonomyDefinitionId.toString();
@@ -281,13 +300,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			registry.setRank("root");
 			taxonomyRegistryDao.save(registry);
 			unmatchedRanks.removeFirst();
-		}
-		taxonomyCreationHierarchy.setMatchedRank(taxonomyDefinition.getRank());
-		taxonomyCreationHierarchy.setMatchedTaxonId(taxonomyDefinition.getId());
-		for (String unmatchedRank : unmatchedRanks) {
-			taxonomyCreationHierarchy.addUnmatchedNodeToCreate(unmatchedRank, rankToParsedName.get(unmatchedRank));
-		}
-		return taxonomyCreationHierarchy;
+			return taxonomyDefinition;
 	}
 
 	private TaxonomyDefinition updateTaxonomyDefinition(Long taxonId, ParsedName parsedName, String rankName,
@@ -356,6 +369,11 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		taxonomyDefinition.setIsDeleted(false);
 		taxonomyDefinition = save(taxonomyDefinition);
 		return taxonomyDefinition;
+	}
+	
+	private Map<String, String> validateHierarchy(HttpServletRequest request, TaxonomySave taxonomySave) {
+		List<Rank> ranks = rankService.getAllRank(request);
+		return null;
 	}
 
 	private Map<String, String> constructRanksForTheInput(HttpServletRequest request, TaxonomySave taxonomySave,
@@ -469,7 +487,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				}
 			}
 			if (!taxonIds.isEmpty()) {
-				taxonomyESUpdate.pushToElastic(taxonIds, ElasticOperation.CREATE);
+				taxonomyESUpdate.pushToElastic(taxonIds);
 			}
 			reader.close();
 		}
@@ -692,11 +710,96 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 		List<Long> taxonIds = taxonomyDao.getAllChildren(taxonId);
 
-		taxonomyESUpdate.pushToElastic(taxonIds, ElasticOperation.UPDATE);
+		taxonomyESUpdate.pushToElastic(taxonIds);
 
 		logger.debug("Name update for the given taxonomy :" + taxonName);
 		logger.debug("Hierarchy update for all the children : " + taxonIds);
 
+		return taxonomyDefinition;
+	}
+
+	@Override
+	public TaxonomyDefinition updateStatus(TaxonomyStatusUpdate taxonomyStatusUpdate) {
+		
+		Long taxonId = taxonomyStatusUpdate.getTaxonId();
+		TaxonomyStatus taxonomyStatus = taxonomyStatusUpdate.getStatus();
+		Map<String, String> hierarchy = taxonomyStatusUpdate.getHierarchy();
+		Long newTaxonId = taxonomyStatusUpdate.getNewTaxonId();
+		
+		TaxonomyDefinition taxonomyDefinition;
+		
+		try {
+			taxonomyDefinition = findById(taxonId);
+		} catch (NoResultException e) {
+			throw new NoResultException("Not able to find the given taxon");
+		}
+		
+		if(taxonomyDefinition.getStatus().equalsIgnoreCase(taxonomyStatus.name())) {
+			// Status is not changed so no need to update.
+			return taxonomyDefinition;
+		}
+		
+		switch (taxonomyStatus) {
+		// Status is changing from synonym to accepted.
+		case ACCEPTED:
+			if(hierarchy == null) 
+				throw new IllegalArgumentException("Hierarchy is required");
+
+			// Remove the link with any other accepted name
+			List<AcceptedSynonym> acceptedSynonyms = acceptedSynonymDao.findBySynonymId(taxonId);
+			for(AcceptedSynonym acceptedSynonym :acceptedSynonyms) {
+				acceptedSynonymDao.delete(acceptedSynonym);
+			}
+			
+			// Add the hierarchy and the node
+			TaxonomySave taxonomySave = new TaxonomySave();
+			taxonomySave.setPosition(TaxonomyPosition.RAW);
+			taxonomySave.setRank(taxonomyDefinition.getRank());
+			taxonomySave.setRankToName(hierarchy);
+			//taxonomySave.setScientificName(taxonomyDefinition.get);
+			
+			// Update the tree
+			
+			// Update the elastic for all the accepted name it was associated and the node itself
+			
+			break;
+		// status is changing from accepted to synonym
+		case SYNONYM:
+			if(newTaxonId == null)
+				throw new IllegalArgumentException("New taxonomy is required to assign all the children");
+			
+			TaxonomyDefinition acceptedTaxonomy = taxonomyDao.findById(newTaxonId);
+			
+			if(acceptedTaxonomy == null)
+				throw new IllegalArgumentException("Could not find the accepted taxonomy with the Id you provided");
+			
+			taxonomyDefinition.setStatus(TaxonomyStatus.SYNONYM.name());
+			
+			// Taxonomy Id to be updated for elastic search
+			List<Long> taxonIds = taxonomyDao.getAllChildren(taxonId);
+			acceptedSynonyms = acceptedSynonymDao.findByAccepetdId(taxonId);
+			for(AcceptedSynonym acceptedSynonym : acceptedSynonyms) {
+				taxonIds.add(acceptedSynonym.getSynonymId());
+			}
+			taxonIds.add(newTaxonId);
+			
+			// Make relevant update to the database.
+			TaxonomyRegistry oldTaxonomyRegistry = taxonomyRegistryDao.findbyTaxonomyId(taxonId);
+			TaxonomyRegistry newTaxonomyRegistry = taxonomyRegistryDao.findbyTaxonomyId(newTaxonId);
+			taxonomyDao.updateStatusToSynonymInDB(newTaxonomyRegistry, oldTaxonomyRegistry);
+			
+			// Update the status for given taxon node.
+			taxonomyDefinition = update(taxonomyDefinition);
+			
+			// Update elastic search for the taxon 
+			taxonomyESUpdate.pushToElastic(taxonIds);
+			
+			break;
+			
+		default:
+			break;
+		}
+		
 		return taxonomyDefinition;
 	}
 }

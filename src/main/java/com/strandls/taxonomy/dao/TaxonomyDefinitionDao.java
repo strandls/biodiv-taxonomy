@@ -11,13 +11,16 @@ import javax.persistence.NoResultException;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 import org.hibernate.type.StandardBasicTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.strandls.taxonomy.TaxonomyConfig;
+import com.strandls.taxonomy.pojo.AcceptedSynonym;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
+import com.strandls.taxonomy.pojo.TaxonomyRegistry;
 import com.strandls.taxonomy.util.AbstractDAO;
 
 /**
@@ -147,5 +150,57 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 			session.close();
 		}
 		return null;
+	}
+
+	@SuppressWarnings("rawtypes")
+	public int updateStatusToSynonymInDB(TaxonomyRegistry newTaxonomyRegistry,TaxonomyRegistry oldtaxonomyRegistry) {
+		
+		Long newTaxonId = newTaxonomyRegistry.getTaxonomyDefinationId();
+		Long taxonId = oldtaxonomyRegistry.getTaxonomyDefinationId();
+		
+		Session session = sessionFactory.openSession();
+		Transaction tx = null;
+		try {
+			tx = session.beginTransaction();
+
+			// Add new synonym and attach it to the given accepted taxonomy
+			AcceptedSynonym acceptedSynonym = new AcceptedSynonym();
+			acceptedSynonym.setAcceptedId(newTaxonId);
+			acceptedSynonym.setSynonymId(taxonId);
+			acceptedSynonym.setVersion(0L);
+			session.save(acceptedSynonym);
+			
+			// Transfer synonym to the new Accepted name
+			//String qry = "update AcceptedSynonym set acceptedId = :newAcceptedId where acceptedId = :acceptedId";
+			Query query = session.createNamedQuery("synonymTransfer");
+			query.setParameter("acceptedId", taxonId);
+			query.setParameter("newAcceptedId", newTaxonId);
+			int rowsUpdated = query.executeUpdate();
+			logger.debug(rowsUpdated + " Synonyms updated their accepted id");
+			
+			// Remove old taxonomy from the hierarchy.
+			session.delete(oldtaxonomyRegistry);
+			
+			// Attach all the children to new accepted name (Hierarchy update)
+			String newPath = newTaxonomyRegistry.getPath();
+			String oldPath = oldtaxonomyRegistry.getPath();
+			String qry = "update taxonomy_registry "
+					+ " set path = text2ltree(:newPath) || subpath(path, nlevel(text2ltree(:oldPath)))"
+					+ " where path <@ text2ltree(:oldPath) and path != text2ltree(:oldPath)";
+			query = session.createNativeQuery(qry);
+			query.setParameter("newPath", newPath);
+			query.setParameter("oldPath", oldPath);
+			rowsUpdated += query.executeUpdate();
+			
+			tx.commit();
+			return rowsUpdated;
+		} catch (Exception e) {
+			if (tx != null)
+				tx.rollback();
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return 0;
 	}
 }

@@ -34,6 +34,7 @@ import com.strandls.taxonomy.pojo.TaxonomicNames;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.pojo.request.FileMetadata;
 import com.strandls.taxonomy.pojo.request.TaxonomySave;
+import com.strandls.taxonomy.pojo.request.TaxonomyStatusUpdate;
 import com.strandls.taxonomy.pojo.response.TaxonomySearch;
 import com.strandls.taxonomy.service.TaxonomyDefinitionSerivce;
 
@@ -196,19 +197,41 @@ public class TaxonomyDefinitionController {
 			return Response.status(Status.BAD_GATEWAY).entity(e.getMessage()).build();
 		}
 	}
-	
+
 	@PUT
 	@Path("name")
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
-	
+
 	@ValidateUser
-	
-	@ApiOperation(value = "Update the name of taxonomy", notes="Update the name. input name should be scientific name", response = TaxonomyDefinition.class)
-	@ApiResponses(value = {@ApiResponse(code = 400, message = "failed to update the name of taxonomy definition", response = String.class)})
-	public Response updateName(@Context HttpServletRequest request, @QueryParam("taxonId") Long taxonId, @QueryParam("taxonName") String taxonName) {
+
+	@ApiOperation(value = "Update the name of taxonomy", notes = "Update the name. input name should be scientific name", response = TaxonomyDefinition.class)
+	@ApiResponses(value = {
+			@ApiResponse(code = 400, message = "failed to update the name of taxonomy definition", response = String.class) })
+	public Response updateName(@Context HttpServletRequest request, @QueryParam("taxonId") Long taxonId,
+			@QueryParam("taxonName") String taxonName) {
 		try {
 			TaxonomyDefinition taxonomyDefinition = taxonomyService.updateName(taxonId, taxonName);
+			return Response.status(Status.OK).entity(taxonomyDefinition).build();
+		} catch (Exception e) {
+			throw new WebApplicationException(
+					Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
+		}
+	}
+
+	@PUT
+	@Path("status")
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ValidateUser
+
+	@ApiOperation(value = "Update the name of taxonomy", notes = "Update the status. Status should be either accepted or synonym", response = TaxonomyDefinition.class)
+	@ApiResponses(value = {
+			@ApiResponse(code = 400, message = "failed to update the name of taxonomy definition", response = String.class) })
+	public Response updateStatus(@Context HttpServletRequest request,
+			@ApiParam("status") TaxonomyStatusUpdate taxonomyStatusUpdate) {
+		try {
+			TaxonomyDefinition taxonomyDefinition = taxonomyService.updateStatus(taxonomyStatusUpdate);
 			return Response.status(Status.OK).entity(taxonomyDefinition).build();
 		} catch (Exception e) {
 			throw new WebApplicationException(

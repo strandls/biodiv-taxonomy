@@ -15,11 +15,13 @@ import javax.inject.Inject;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
 import org.hibernate.query.NativeQuery;
 import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.strandls.taxonomy.pojo.AcceptedSynonym;
 import com.strandls.taxonomy.pojo.TaxonomyRegistry;
 import com.strandls.taxonomy.pojo.response.TaxonomyRegistryResponse;
 import com.strandls.taxonomy.util.AbstractDAO;
@@ -242,5 +244,35 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 			session.close();
 		}
 		return null;
+	}
+
+	public int moveAllChild(Long taxonId, Long newTaxonId) {
+		TaxonomyRegistry taxonomyRegistry = findById(taxonId);
+		String path = taxonomyRegistry.getPath();
+		
+		String qry = "update " + daoType.getSimpleName() + " t "
+				+ " set t.path = subpath(path, nlevel(:path)-1) || ':newTaxonId' || subpath(path, nlevel(:path))"
+				+ " where path <@ :path and path != :path";
+		
+		Session session = sessionFactory.openSession();
+		Transaction tx = null;
+		try {
+			tx = session.beginTransaction();
+
+			Query<AcceptedSynonym> query = session.createQuery(qry);
+			query.setParameter("path", path);
+			query.setParameter("newTaxonId", newTaxonId);
+			int rowsUpdated = query.executeUpdate();
+			
+			tx.commit();
+			return rowsUpdated;
+		} catch (Exception e) {
+			if (tx != null)
+				tx.rollback();
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return 0;
 	}
 }

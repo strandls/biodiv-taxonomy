@@ -1,9 +1,7 @@
 package com.strandls.taxonomy.service.impl;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import javax.inject.Inject;
 
@@ -11,14 +9,12 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.query.Query;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.strandls.esmodule.ApiException;
 import com.strandls.esmodule.controllers.EsServicesApi;
 import com.strandls.esmodule.pojo.MapQueryResponse;
 import com.strandls.taxonomy.TaxonomyConfig;
 import com.strandls.taxonomy.pojo.TaxonomyESDocument;
-import com.strandls.taxonomy.pojo.enumtype.ElasticOperation;
 
 public class TaxonomyESOperation {
 
@@ -49,7 +45,7 @@ public class TaxonomyESOperation {
 	 *                       the elastic.
 	 * @return - MapQueryResponse
 	 */
-	public List<MapQueryResponse> pushToElastic(List<Long> taxonIds, ElasticOperation elasticOperation) {
+	public List<MapQueryResponse> pushToElastic(List<Long> taxonIds) {
 
 		Session session = sessionFactory.getCurrentSession();
 		session.beginTransaction();
@@ -64,21 +60,8 @@ public class TaxonomyESOperation {
 			String index = TaxonomyConfig.getString(ES_TAXONOMY_INDEX);
 			String type = TaxonomyConfig.getString(ES_TAXONOMY_TYPE);
 
-			switch (elasticOperation) {
-			case CREATE:
-				String taxonomyJsonData = objectMapper.writeValueAsString(taxonomyESDocuments);
-				return esServicesApi.bulkUpload(index, type, taxonomyJsonData);
-			case UPDATE:
-				List<Map<String, Object>> bulkUpdateData = new ArrayList<Map<String, Object>>();
-				for (TaxonomyESDocument taxonomyESDocument : taxonomyESDocuments) {
-					bulkUpdateData.add(
-							objectMapper.convertValue(taxonomyESDocument, new TypeReference<Map<String, Object>>() {
-							}));
-				}
-				return esServicesApi.bulkUpdate(index, type, bulkUpdateData);
-			default:
-				break;
-			}
+			String taxonomyJsonData = objectMapper.writeValueAsString(taxonomyESDocuments);
+			return esServicesApi.bulkUpload(index, type, taxonomyJsonData);
 
 		} catch (IOException e1) {
 			e1.printStackTrace();

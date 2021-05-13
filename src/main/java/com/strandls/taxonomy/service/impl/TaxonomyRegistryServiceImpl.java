@@ -8,7 +8,6 @@ import java.util.Map;
 import javax.inject.Inject;
 
 import com.strandls.taxonomy.dao.AcceptedSynonymDao;
-import com.strandls.taxonomy.dao.SpeciesPermissionDao;
 import com.strandls.taxonomy.dao.TaxonomyDefinitionDao;
 import com.strandls.taxonomy.dao.TaxonomyRegistryDao;
 import com.strandls.taxonomy.pojo.AcceptedSynonym;
@@ -42,9 +41,6 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 	private TaxonomyDefinitionDao taxonomyDefinitionDao;
 
 	@Inject
-	private SpeciesPermissionDao speciesPermissionDao;
-
-	@Inject
 	public TaxonomyRegistryServiceImpl(TaxonomyRegistryDao dao) {
 		super(dao);
 	}
@@ -53,8 +49,9 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 	public List<BreadCrumb> fetchByTaxonomyId(Long id) {
 		TaxonomyRegistry taxoRegistry = taxonomyRegistryDao.findbyTaxonomyId(id);
 		if (taxoRegistry == null) {
-			AcceptedSynonym acceptedSynonym = acceptedSynonymDao.findAccpetedId(id);
-			taxoRegistry = taxonomyRegistryDao.findbyTaxonomyId(acceptedSynonym.getAcceptedId());
+			List<AcceptedSynonym> acceptedSynonyms = acceptedSynonymDao.findBySynonymId(id);
+			if (acceptedSynonyms != null && !acceptedSynonyms.isEmpty())
+				taxoRegistry = taxonomyRegistryDao.findbyTaxonomyId(acceptedSynonyms.get(0).getAcceptedId());
 		}
 
 		String paths = taxoRegistry.getPath().replace(".", ",");
@@ -180,6 +177,7 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 	 * @param res dummy
 	 * @return dummy
 	 */
+	@SuppressWarnings("unchecked")
 	private List<TaxonRelation> createInputItems(List<Map<String, Object>> res) {
 		List<TaxonRelation> result = new ArrayList<>();
 		for (Map<String, Object> data : res) {

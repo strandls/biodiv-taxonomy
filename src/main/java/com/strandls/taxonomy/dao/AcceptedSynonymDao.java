@@ -9,6 +9,7 @@ import javax.inject.Inject;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,15 +48,15 @@ public class AcceptedSynonymDao extends AbstractDAO<AcceptedSynonym, Long> {
 	}
 
 	@SuppressWarnings("unchecked")
-	public AcceptedSynonym findAccpetedId(Long synonymId) {
+	public List<AcceptedSynonym> findBySynonymId(Long synonymId) {
 		Session session = sessionFactory.openSession();
-		AcceptedSynonym result = null;
+		List<AcceptedSynonym> result = null;
 		String qry = "from AcceptedSynonym where synonymId = :synonymId";
 		try {
 			Query<AcceptedSynonym> query = session.createQuery(qry);
 			query.setParameter("synonymId", synonymId);
 			query.setMaxResults(1);
-			result = query.getSingleResult();
+			result = query.getResultList();
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		} finally {
@@ -101,4 +102,27 @@ public class AcceptedSynonymDao extends AbstractDAO<AcceptedSynonym, Long> {
 		return result;
 	}
 
+	/**
+	 * Transfer all the synonym from one accepted name to another
+	 * @param taxonId
+	 * @param newTaxonId
+	 */
+	public int synonymTransfer(Long taxonId, Long newTaxonId) {
+		Session session = sessionFactory.openSession();
+		Transaction tx = null;
+		try {
+			tx = session.beginTransaction();
+			Query<AcceptedSynonym> query = session.createNamedQuery("synonymTransfer");
+			query.setParameter("acceptedId", taxonId);
+			query.setParameter("newAcceptedId", newTaxonId);
+			int rowsUpdated = query.executeUpdate();
+			tx.commit();
+			return rowsUpdated;
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return 0;
+	}
 }
