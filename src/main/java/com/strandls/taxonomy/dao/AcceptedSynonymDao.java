@@ -46,6 +46,18 @@ public class AcceptedSynonymDao extends AbstractDAO<AcceptedSynonym, Long> {
 		}
 		return result;
 	}
+	
+	public AcceptedSynonym createAcceptedSynonym(Long acceptedId, Long synonymId) {
+		AcceptedSynonym acceptedSynonym = findByAccpetedIdSynonymId(acceptedId, synonymId);
+		if (acceptedSynonym == null) {
+			acceptedSynonym = new AcceptedSynonym();
+			acceptedSynonym.setAcceptedId(acceptedId);
+			acceptedSynonym.setSynonymId(synonymId);
+			acceptedSynonym.setVersion(0L);
+			save(acceptedSynonym);
+		}
+		return acceptedSynonym;
+	}
 
 	@SuppressWarnings("unchecked")
 	public List<AcceptedSynonym> findBySynonymId(Long synonymId) {

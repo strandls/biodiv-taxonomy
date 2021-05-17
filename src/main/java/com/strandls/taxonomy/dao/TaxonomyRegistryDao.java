@@ -104,6 +104,15 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 
 		return result;
 	}
+	
+	public TaxonomyRegistry createRegistry(Long classificationId, String path, String rank, Long taxonDefinitionId) {
+		TaxonomyRegistry registry = new TaxonomyRegistry();
+		registry.setClassificationId(classificationId);
+		registry.setPath(path.toString());
+		registry.setTaxonomyDefinationId(taxonDefinitionId);
+		registry.setRank(rank);
+		return save(registry);
+	}
 
 	public List<String> findByTaxonIdOnTraitList(List<Long> traitTaxonIds, Set<String> speciesGroupTaxonIds) {
 

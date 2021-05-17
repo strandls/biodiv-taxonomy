@@ -15,6 +15,13 @@ public class TaxonomySave {
 	private String sourceId;
 	private String source;
 	private Map<Long, String[]> commonNames;
+
+	/**
+	 * This two are based on the taxonomy status 
+	 * acceptedId is required if the status is synonym. 
+	 * rankToName is required if the status is accepted.
+	 */
+	private Long acceptedId;
 	private Map<String, String> rankToName;
 
 	public TaxonomySave() {
@@ -22,7 +29,8 @@ public class TaxonomySave {
 	}
 
 	public TaxonomySave(String scientificName, String rank, String synonyms, TaxonomyStatus status,
-			TaxonomyPosition position, String sourceId, String source, Map<Long, String[]> commonNames, Map<String, String> rankToName) {
+			TaxonomyPosition position, String sourceId, String source, Map<Long, String[]> commonNames, Long acceptedId,
+			Map<String, String> rankToName) {
 		super();
 		this.scientificName = scientificName;
 		this.rank = rank;
@@ -32,6 +40,7 @@ public class TaxonomySave {
 		this.sourceId = sourceId;
 		this.source = source;
 		this.commonNames = commonNames;
+		this.acceptedId = acceptedId;
 		this.rankToName = rankToName;
 	}
 
@@ -78,11 +87,11 @@ public class TaxonomySave {
 	public String getSourceId() {
 		return sourceId;
 	}
-	
+
 	public void setSourceId(String sourceId) {
 		this.sourceId = sourceId;
 	}
-	
+
 	public String getSource() {
 		return source;
 	}
@@ -90,13 +99,21 @@ public class TaxonomySave {
 	public void setSource(String source) {
 		this.source = source;
 	}
-	
+
 	public Map<Long, String[]> getCommonNames() {
 		return commonNames;
 	}
-	
+
 	public void setCommonNames(Map<Long, String[]> commonNames) {
 		this.commonNames = commonNames;
+	}
+
+	public Long getAcceptedId() {
+		return acceptedId;
+	}
+
+	public void setAcceptedId(Long acceptedId) {
+		this.acceptedId = acceptedId;
 	}
 
 	public Map<String, String> getRankToName() {
@@ -106,4 +123,5 @@ public class TaxonomySave {
 	public void setRankToName(Map<String, String> rankToName) {
 		this.rankToName = rankToName;
 	}
+
 }

@@ -15,10 +15,10 @@ import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import com.strandls.taxonomy.pojo.SynonymData;
 import com.strandls.taxonomy.pojo.TaxonomicNames;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
-import com.strandls.taxonomy.pojo.enumtype.TaxonomyStatus;
 import com.strandls.taxonomy.pojo.request.TaxonomySave;
 import com.strandls.taxonomy.pojo.request.TaxonomyStatusUpdate;
 import com.strandls.taxonomy.pojo.response.TaxonomySearch;
+import com.strandls.taxonomy.service.exception.TaxonCreationException;
 import com.strandls.utility.ApiException;
 
 /**
@@ -52,6 +52,6 @@ public interface TaxonomyDefinitionSerivce {
 
 	public TaxonomyDefinition updateName(Long taxonId, String taxonName) throws ApiException;
 
-	public TaxonomyDefinition updateStatus(TaxonomyStatusUpdate taxonomyStatusUpdate);
+	public TaxonomyDefinition updateStatus(HttpServletRequest request, TaxonomyStatusUpdate taxonomyStatusUpdate) throws ApiException, TaxonCreationException;
 
 }

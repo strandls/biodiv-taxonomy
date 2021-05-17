@@ -13,7 +13,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -47,7 +46,6 @@ import com.strandls.taxonomy.pojo.TaxonomyRegistry;
 import com.strandls.taxonomy.pojo.enumtype.TaxonomyPosition;
 import com.strandls.taxonomy.pojo.enumtype.TaxonomyStatus;
 import com.strandls.taxonomy.pojo.request.FileMetadata;
-import com.strandls.taxonomy.pojo.request.TaxonomyCreationHierarchy;
 import com.strandls.taxonomy.pojo.request.TaxonomySave;
 import com.strandls.taxonomy.pojo.request.TaxonomyStatusUpdate;
 import com.strandls.taxonomy.pojo.response.TaxonomyDefinitionAndRegistry;
@@ -151,8 +149,10 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			throws ApiException {
 		List<TaxonomyDefinition> createdTaxonomy;
 		try {
-			createdTaxonomy = addNodes(request, taxonomySave);
+			createdTaxonomy = addTaxonomy(request, taxonomySave);
 		} catch (TaxonCreationException e) {
+			return null;
+		} catch (UnRecongnizedRankException e) {
 			return null;
 		}
 
@@ -162,145 +162,16 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		return createdTaxonomy;
 	}
 
-	private List<TaxonomyDefinition> addNodes(HttpServletRequest request, TaxonomySave taxonomySave)
-			throws ApiException, TaxonCreationException {
+	private TaxonomyDefinition createRoot(StringBuilder path) throws ApiException, TaxonCreationException {
+		ParsedName parsedName = utilityServiceApi.getNameParsed("Root");
+		TaxonomyDefinition taxonomyDefinition = createTaxonomyDefiniiton(parsedName, "root", TaxonomyStatus.ACCEPTED,
+				TaxonomyPosition.CLEAN, null, null, null);
+		Long taxonomyDefinitionId = taxonomyDefinition.getId();
 
-		CommonProfile profile = AuthUtil.getProfileFromRequest(request);
-		Long userId = Long.parseLong(profile.getId());
-		Map<String, TaxonomyDefinition> createdTaxonomy = new LinkedHashMap<String, TaxonomyDefinition>();
+		path.append(taxonomyDefinitionId);
+		taxonomyRegistryDao.createRegistry(1L, path.toString(), "root", taxonomyDefinitionId);
 
-		Map<String, String> constructedRanks = constructRanksForTheInput(request, taxonomySave, taxonomySave.getRank(),
-				taxonomySave.getScientificName());
-		TaxonomyCreationHierarchy taxonomyCreationHierarchy = getTaxonomyCreationHierarchy(constructedRanks,
-				taxonomySave);
-		Long matchedTaxonId = taxonomyCreationHierarchy.getMatchedTaxonId();
-		TaxonomyRegistry registry = taxonomyRegistryDao.findbyTaxonomyId(matchedTaxonId);
-		String parentPath = registry.getPath();
-		StringBuilder path = new StringBuilder(parentPath);
-
-		for (Map.Entry<String, ParsedName> entry : taxonomyCreationHierarchy.getUnmatchedNodeToCreate().entrySet()) {
-			String nodeRank = entry.getKey();
-			ParsedName parsedName = entry.getValue();
-			TaxonomyDefinition taxonomyDefinition = createTaxonomyDefiniiton(parsedName, nodeRank,
-					taxonomySave.getStatus(), taxonomySave.getPosition(), taxonomySave.getSource(),
-					taxonomySave.getSourceId(), userId);
-			createdTaxonomy.put(nodeRank, taxonomyDefinition);
-			Long taxonomyDefinitionId = taxonomyDefinition.getId();
-			path.append(".");
-			path.append(taxonomyDefinitionId);
-			registry = new TaxonomyRegistry();
-			registry.setClassificationId(1L);
-			registry.setPath(path.toString());
-			registry.setTaxonomyDefinationId(taxonomyDefinitionId);
-			registry.setRank(nodeRank);
-			taxonomyRegistryDao.save(registry);
-		}
-		// Add the synonyms if present for the given accepted names in definition and
-		// accepted-synonyms
-		TaxonomyDefinition acceptedTaxonomy;
-		if (taxonomyCreationHierarchy.getUnmatchedNodeToCreate().isEmpty()
-				&& taxonomyCreationHierarchy.getMatchedRank().equalsIgnoreCase(taxonomySave.getRank())) {
-			acceptedTaxonomy = taxonomyDao.findById(matchedTaxonId);
-		} else {
-			acceptedTaxonomy = createdTaxonomy.get(taxonomySave.getRank().toLowerCase());
-		}
-		String synonyms = taxonomySave.getSynonyms();
-		List<TaxonomyDefinition> taxonomyDefinitions = new ArrayList<TaxonomyDefinition>();
-		taxonomyDefinitions.addAll(createdTaxonomy.values());
-
-		if (synonyms != null && !"".equals(synonyms.trim())
-				&& (acceptedTaxonomy != null && TaxonomyStatus.ACCEPTED.name().equals(acceptedTaxonomy.getStatus()))) {
-			Long acceptedId = acceptedTaxonomy.getId();
-			String acceptedRank = acceptedTaxonomy.getRank();
-			for (String synonym : synonyms.split(";")) {
-				ParsedName parsedName = utilityServiceApi.getNameParsed(synonym);
-				String synonymRank;
-				try {
-					synonymRank = TaxonomyUtil.getRankForSynonym(parsedName, acceptedRank);
-				} catch (UnRecongnizedRankException e) {
-					// Dropping this synonym
-					continue;
-				}
-				TaxonomyDefinition synonymTaxonomy = findByCanonicalName(parsedName, synonymRank,
-						TaxonomyStatus.SYNONYM, taxonomySave);
-				if (synonymTaxonomy == null
-						|| TaxonomyStatus.ACCEPTED.name().equalsIgnoreCase(synonymTaxonomy.getStatus())) {
-					synonymTaxonomy = createTaxonomyDefiniiton(parsedName, synonymRank, TaxonomyStatus.SYNONYM,
-							taxonomySave.getPosition(), taxonomySave.getSource(), taxonomySave.getSourceId(), userId);
-					taxonomyDefinitions.add(synonymTaxonomy);
-				}
-				Long synonymId = synonymTaxonomy.getId();
-				AcceptedSynonym acceptedSynonym = acceptedSynonymDao.findByAccpetedIdSynonymId(acceptedId, synonymId);
-				if (acceptedSynonym == null) {
-					acceptedSynonym = new AcceptedSynonym();
-					acceptedSynonym.setAcceptedId(acceptedId);
-					acceptedSynonym.setSynonymId(synonymId);
-					acceptedSynonym.setVersion(0L);
-					acceptedSynonymDao.save(acceptedSynonym);
-				}
-			}
-		}
-
-		// Add the common names into the system
-		Map<Long, String[]> languageIdToCommonNames = taxonomySave.getCommonNames();
-		String source = acceptedTaxonomy.getViaDatasource();
-		if (acceptedTaxonomy != null && languageIdToCommonNames != null && !languageIdToCommonNames.isEmpty()) {
-			Long taxonConceptId = acceptedTaxonomy.getId();
-			commonNameSerivce.addCommonNames(taxonConceptId, languageIdToCommonNames, source);
-		}
-		return taxonomyDefinitions;
-	}
-
-	private TaxonomyCreationHierarchy getTaxonomyCreationHierarchy(Map<String, String> constructedRanks,
-			TaxonomySave taxonomySave) throws ApiException, TaxonCreationException {
-		LinkedList<String> unmatchedRanks = new LinkedList<String>();
-		TaxonomyDefinition taxonomyDefinition = null;
-		Map<String, ParsedName> rankToParsedName = new HashMap<String, ParsedName>();
-		for (Map.Entry<String, String> entry : constructedRanks.entrySet()) {
-			String rankName = entry.getKey();
-			String scientificName = entry.getValue();
-			ParsedName parsedName = utilityServiceApi.getNameParsed(scientificName);
-			rankToParsedName.put(rankName, parsedName);
-			taxonomyDefinition = findByCanonicalName(parsedName, rankName, TaxonomyStatus.ACCEPTED, taxonomySave);
-			if (taxonomyDefinition != null)
-				break;
-			unmatchedRanks.addFirst(rankName);
-		}
-		TaxonomyCreationHierarchy taxonomyCreationHierarchy = new TaxonomyCreationHierarchy();
-		// First entry without the ROOT element in definition and registry
-		if (taxonomyDefinition == null)
-			taxonomyDefinition = createRoot(unmatchedRanks);
-		
-		taxonomyCreationHierarchy.setMatchedRank(taxonomyDefinition.getRank());
-		taxonomyCreationHierarchy.setMatchedTaxonId(taxonomyDefinition.getId());
-		for (String unmatchedRank : unmatchedRanks) {
-			taxonomyCreationHierarchy.addUnmatchedNodeToCreate(unmatchedRank, rankToParsedName.get(unmatchedRank));
-		}
-		return taxonomyCreationHierarchy;
-	}
-	
-	/**
-	 * Root creation at the start of application. This is one time job 
-	 * Won't be executed after word
-	 * @return 
-	 * @throws ApiException 
-	 * @throws TaxonCreationException 
-	 */
-	private TaxonomyDefinition createRoot(LinkedList<String> unmatchedRanks) throws ApiException, TaxonCreationException {
-			ParsedName parsedName = utilityServiceApi.getNameParsed("Root");
-			TaxonomyDefinition taxonomyDefinition = createTaxonomyDefiniiton(parsedName, "root", TaxonomyStatus.ACCEPTED,
-					TaxonomyPosition.CLEAN, null, null, null);
-			Long taxonomyDefinitionId = taxonomyDefinition.getId();
-			String path = taxonomyDefinitionId.toString();
-
-			TaxonomyRegistry registry = new TaxonomyRegistry();
-			registry.setClassificationId(1L);
-			registry.setPath(path);
-			registry.setTaxonomyDefinationId(taxonomyDefinitionId);
-			registry.setRank("root");
-			taxonomyRegistryDao.save(registry);
-			unmatchedRanks.removeFirst();
-			return taxonomyDefinition;
+		return taxonomyDefinition;
 	}
 
 	private TaxonomyDefinition updateTaxonomyDefinition(Long taxonId, ParsedName parsedName, String rankName,
@@ -370,83 +241,283 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		taxonomyDefinition = save(taxonomyDefinition);
 		return taxonomyDefinition;
 	}
-	
-	private Map<String, String> validateHierarchy(HttpServletRequest request, TaxonomySave taxonomySave) {
-		List<Rank> ranks = rankService.getAllRank(request);
-		return null;
-	}
 
-	private Map<String, String> constructRanksForTheInput(HttpServletRequest request, TaxonomySave taxonomySave,
-			String rankName, String scientificName) {
-		List<Rank> ranks = rankService.getAllRank(request);
-		Map<String, String> inputRanks = taxonomySave.getRankToName();
-		Double highestInputRank = TaxonomyUtil.getHighestInputRank(ranks, inputRanks);
-		Map<String, String> constructedRanks = new LinkedHashMap<String, String>();
-		constructedRanks.put(rankName.toLowerCase(), scientificName);
-		for (Rank rank : ranks) {
-			if (rank.getRankValue() > highestInputRank)
-				continue;
+	private List<TaxonomyDefinition> addTaxonomy(HttpServletRequest request, TaxonomySave taxonomyData)
+			throws ApiException, TaxonCreationException, UnRecongnizedRankException {
 
-			if (rank.getRankValue() == 0.0)
-				constructedRanks.put(rank.getName(), "Root");
-			else if (rank.getIsRequired().booleanValue() && !inputRanks.containsKey(rank.getName()))
-				throw new IllegalArgumentException("Input should contain all the required ranks");
-			else if (inputRanks.containsKey(rank.getName()) && !"".equals(inputRanks.get(rank.getName())))
-				constructedRanks.put(rank.getName().toLowerCase(), inputRanks.get(rank.getName()));
+		CommonProfile profile = AuthUtil.getProfileFromRequest(request);
+		Long userId = Long.parseLong(profile.getId());
+
+		// TODO : check authorization here
+
+		// Check for the valid hierarchy if the status is accepted.
+		TaxonomyStatus status = taxonomyData.getStatus();
+		TaxonomyPosition position = taxonomyData.getPosition();
+		List<Rank> ranks = rankService.getAllRank(request);
+
+		String source = taxonomyData.getSource();
+		String sourceId = taxonomyData.getSourceId();
+
+		String rankName = taxonomyData.getRank().toLowerCase();
+		String scientificName = taxonomyData.getScientificName();
+
+		StringBuilder path = new StringBuilder();
+		Map<String, TaxonomyDefinition> hierarchyCreated = new LinkedHashMap<String, TaxonomyDefinition>();
+
+		ParsedName parsedName = utilityServiceApi.getNameParsed(scientificName);
+		TaxonomyDefinition taxonomyDefinition = getLeafMatchedNode(parsedName, rankName, status);
+
+		List<TaxonomyDefinition> taxonomyDefinitions = new ArrayList<TaxonomyDefinition>();
+
+		// Create the node if doesn't exist
+		if (taxonomyDefinition == null) {
+
+			// Create and update hierarchy if not exist
+			if (status.equals(TaxonomyStatus.ACCEPTED)) {
+				hierarchyCreated = updateAndCreateHierarchyUtil(path, ranks, userId, taxonomyData);
+				taxonomyDefinitions.addAll(hierarchyCreated.values());
+			}
+
+			// Name can be synonym as well, so kept the hierarchy creation and registry
+			// creation separate
+			taxonomyDefinition = createTaxonomyDefiniiton(parsedName, rankName, status, position, source, sourceId,
+					userId);
+			taxonomyDefinitions.add(taxonomyDefinition);
+
+			// If the status is accepted add node to registry
+			if (status.equals(TaxonomyStatus.ACCEPTED)) {
+				Long taxonId = taxonomyDefinition.getId();
+				path.append(".");
+				path.append(taxonId);
+				taxonomyRegistryDao.createRegistry(1L, path.toString(), rankName, taxonId);
+			}
 		}
-		return constructedRanks;
+
+		// If it is synonym add it to the accepted synonym table
+		if (status.equals(TaxonomyStatus.SYNONYM)) {
+			Long synonymId = taxonomyDefinition.getId();
+			Long acceptedId = taxonomyData.getAcceptedId();
+			if (acceptedId == null)
+				throw new TaxonCreationException("Accepted Id is required for the synonym");
+			acceptedSynonymDao.createAcceptedSynonym(acceptedId, synonymId);
+		}
+
+		// Add Synonyms
+		String synonymString = taxonomyData.getSynonyms();
+		if (synonymString != null && !"".equals(synonymString.trim())) {
+
+			Long acceptedId = taxonomyDefinition.getId();
+
+			SynonymData synonymData = new SynonymData();
+			synonymData.setName(synonymString.trim());
+			synonymData.setRank(rankName);
+			synonymData.setDataSource(source);
+			synonymData.setDataSourceId(sourceId);
+
+			List<TaxonomyDefinition> synonyms = addSynonym(request, acceptedId, synonymData);
+			taxonomyDefinitions.addAll(synonyms);
+		}
+
+		// Add all common name
+		if (taxonomyData.getCommonNames() != null) {
+			Long taxonId = taxonomyDefinition.getId();
+			Map<Long, String[]> languageIdToCommonNames = taxonomyData.getCommonNames();
+			if (languageIdToCommonNames != null && !languageIdToCommonNames.isEmpty()) {
+				commonNameSerivce.addCommonNames(taxonId, languageIdToCommonNames, source);
+			}
+		}
+
+		return taxonomyDefinitions;
 	}
 
-	private TaxonomyDefinition findByCanonicalName(ParsedName parsedName, String rankName, TaxonomyStatus status,
-			TaxonomySave taxonomySave) throws ApiException {
+	/**
+	 * This is internally used by the addTaxonomyMethod
+	 * @param request
+	 * @param taxonId
+	 * @param synonymData
+	 * @return
+	 * @throws ApiException
+	 * @throws UnRecongnizedRankException
+	 */
+	private List<TaxonomyDefinition> addSynonym(HttpServletRequest request, Long taxonId, SynonymData synonymData)
+			throws ApiException, UnRecongnizedRankException {
+		List<TaxonomyDefinition> taxonomyDefinitions = new ArrayList<TaxonomyDefinition>();
+
+		String name = synonymData.getName();
+		String source = synonymData.getDataSource();
+		String sourceId = synonymData.getDataSourceId();
+		String rankName = synonymData.getRank();
+
+		for (String synonymName : name.split(";")) {
+			synonymName.trim();
+
+			ParsedName synonymParsedName;
+			String synonymRank;
+
+			// If any of these exception occurs then we are skipping the synonym.
+			try {
+				synonymParsedName = utilityServiceApi.getNameParsed(synonymName);
+				synonymRank = TaxonomyUtil.getRankForSynonym(synonymParsedName, rankName);
+			} catch (ApiException e) {
+				logger.error("Invalie name for the synonym : " + synonymName);
+				continue;
+			} catch (UnRecongnizedRankException e) {
+				logger.error("Unrecognized rank for the synonym : " + synonymName);
+				continue;
+			}
+
+			TaxonomySave taxonomyData = new TaxonomySave();
+			taxonomyData.setPosition(TaxonomyPosition.RAW);
+			taxonomyData.setRank(synonymRank);
+			taxonomyData.setScientificName(synonymName);
+			taxonomyData.setSource(source);
+			taxonomyData.setSourceId(sourceId);
+			taxonomyData.setStatus(TaxonomyStatus.SYNONYM);
+			taxonomyData.setAcceptedId(taxonId);
+
+			List<TaxonomyDefinition> synonyms;
+			try {
+				synonyms = addTaxonomy(request, taxonomyData);
+			} catch (TaxonCreationException e) {
+				logger.error("Synonym Creation failed : " + synonymName);
+				continue;
+			}
+
+			taxonomyDefinitions.addAll(synonyms);
+		}
+		return taxonomyDefinitions;
+
+	}
+
+	/**
+	 * Utility to update and create the hierarchy
+	 * 
+	 * @param path         - String builder which store the path for hierarchy.
+	 *                     (call by reference variable)
+	 * @param ranks        - Pull of object for the available rank in the system.
+	 * @param userId       - userId
+	 * @param taxonomyData - taxonomy Data to push in the DB
+	 * @return
+	 * @throws ApiException           - If there is any micro-service down.
+	 * @throws TaxonCreationException - There is problem with hierarchy creation.
+	 */
+	private Map<String, TaxonomyDefinition> updateAndCreateHierarchyUtil(StringBuilder path, List<Rank> ranks,
+			Long userId, TaxonomySave taxonomyData) throws ApiException, TaxonCreationException {
+
+		Map<String, String> rankToName = taxonomyData.getRankToName();
+		String source = taxonomyData.getSource();
+		String sourceId = taxonomyData.getSourceId();
+		TaxonomyPosition position = taxonomyData.getPosition();
+
+		rankToName.put("root", "Root");
+
+		// Validate the rank with the leaf node as well.
+		String rankName = taxonomyData.getRank().toLowerCase();
+		rankToName.put(rankName, taxonomyData.getScientificName());
+
+		if (!TaxonomyUtil.validateHierarchy(ranks, rankToName.keySet()))
+			throw new TaxonCreationException("Invalid hierarchy");
+
+		// Remove the leaf node For hierarchy update or creation.
+		rankToName.remove(rankName);
+
+		// Generate the rank to parse name pool of object.
+		Map<String, ParsedName> rankToParsedName = new HashMap<String, ParsedName>();
+		for (Map.Entry<String, String> e : rankToName.entrySet()) {
+			ParsedName parsedName = utilityServiceApi.getNameParsed(e.getValue());
+			rankToParsedName.put(e.getKey().toLowerCase(), parsedName);
+		}
+
+		Map<String, TaxonomyDefinition> hierarchyCreated = updateAndCreateHierarchy(path, ranks, rankToParsedName,
+				position, source, sourceId, userId);
+
+		return hierarchyCreated;
+	}
+
+	private Map<String, TaxonomyDefinition> updateAndCreateHierarchy(StringBuilder path, List<Rank> ranks,
+			Map<String, ParsedName> rankToParsedName, TaxonomyPosition position, String source, String sourceId,
+			Long userId) throws ApiException, TaxonCreationException {
+
+		String highestRankName = TaxonomyUtil.getHighestInputRankName(ranks, rankToParsedName.keySet());
+		ParsedName parsedName = rankToParsedName.get(highestRankName);
+
+		TaxonomyDefinition taxonomyDefinition = getHierarchyMatchedNode(parsedName, highestRankName, rankToParsedName);
+
+		Map<String, TaxonomyDefinition> createdHierarchy;
+		// Found the match for the taxonomy
+		if (taxonomyDefinition != null) {
+			String taxonPath = taxonomyRegistryDao.findbyTaxonomyId(taxonomyDefinition.getId()).getPath();
+			path.append(taxonPath);
+			return new LinkedHashMap<String, TaxonomyDefinition>();
+		} else {
+			// Not found the match then go up the hierarchy to find the match
+			rankToParsedName.remove(highestRankName);
+			if (highestRankName.equalsIgnoreCase("root")) {
+				TaxonomyDefinition root = createRoot(path);
+				createdHierarchy = new LinkedHashMap<String, TaxonomyDefinition>();
+				createdHierarchy.put("root", root);
+				return createdHierarchy;
+			}
+
+			createdHierarchy = updateAndCreateHierarchy(path, ranks, rankToParsedName, position, source, sourceId,
+					userId);
+
+			// Generate node here and go for the higher hierarchy
+			taxonomyDefinition = createTaxonomyDefiniiton(parsedName, highestRankName, TaxonomyStatus.ACCEPTED,
+					position, source, sourceId, userId);
+			createdHierarchy.put(highestRankName, taxonomyDefinition);
+
+			// Add the created taxonomy to the registry.
+			Long taxonId = taxonomyDefinition.getId();
+			path.append(".");
+			path.append(taxonId);
+			taxonomyRegistryDao.createRegistry(1L, path.toString(), highestRankName, taxonId);
+		}
+
+		return createdHierarchy;
+	}
+
+	private TaxonomyDefinition getHierarchyMatchedNode(ParsedName parsedName, String rankName,
+			Map<String, ParsedName> rankToParsedName) throws ApiException {
+
+		List<TaxonomyDefinition> taxonomyDefinitions = taxonomyDao
+				.findByCanonicalForm(parsedName.getCanonicalName().getFull(), rankName);
+
+		int maxScore = 0;
+		TaxonomyDefinition matchedTaxonomy = null;
+		for (TaxonomyDefinition taxonomyDefinition : taxonomyDefinitions) {
+			List<Object[]> hierarchy = taxonomyRegistryDao.getHierarchy(taxonomyDefinition.getId());
+			int score = 0;
+			for (Object[] row : hierarchy) {
+				String rank = (String) row[1];
+				ParsedName inputParsedName = rankToParsedName.get(rank);
+				if (inputParsedName.getCanonicalName().getFull().equalsIgnoreCase((String) row[2]))
+					score++;
+			}
+			if (maxScore < score) {
+				maxScore = score;
+				matchedTaxonomy = taxonomyDefinition;
+			}
+		}
+		return matchedTaxonomy;
+	}
+
+	private TaxonomyDefinition getLeafMatchedNode(ParsedName parsedName, String rankName, TaxonomyStatus status) {
 
 		if (parsedName == null || parsedName.getCanonicalName() == null)
 			return null;
 
 		String canonicalName = parsedName.getCanonicalName().getFull();
+
 		List<TaxonomyDefinition> taxonomyDefinitions = taxonomyDao.findByCanonicalForm(canonicalName, rankName);
 
-		if (taxonomyDefinitions.isEmpty())
-			return null;
-
-		boolean isLeaf = TaxonomyStatus.SYNONYM.equals(status) || taxonomySave.getRank().equalsIgnoreCase(rankName);
-
-		String verbatim = parsedName.getVerbatim();
-		if (isLeaf) {
-			for (TaxonomyDefinition taxonomyDefinition : taxonomyDefinitions) {
-				if (!status.name().equalsIgnoreCase(taxonomyDefinition.getStatus()))
-					continue;
-				if (taxonomyDefinition.getName().equals(verbatim))
-					return taxonomyDefinition;
-			}
-		} else {
-			Map<String, String> rankToName = taxonomySave.getRankToName();
-			rankToName.put("root", "Root");
-			Map<String, ParsedName> rankToParsedName = new HashMap<String, ParsedName>();
-			for (Map.Entry<String, String> entry : rankToName.entrySet()) {
-				String scientificName = entry.getValue();
-				ParsedName pName = utilityServiceApi.getNameParsed(scientificName);
-				rankToParsedName.put(entry.getKey(), pName);
-			}
-			int maxScore = 0;
-			TaxonomyDefinition matchedTaxonomy = null;
-			for (TaxonomyDefinition taxonomyDefinition : taxonomyDefinitions) {
-				List<Object[]> hierarchy = taxonomyRegistryDao.getHierarchy(taxonomyDefinition.getId());
-				int score = 0;
-				for (Object[] row : hierarchy) {
-					String rank = (String) row[1];
-					ParsedName inputParsedName = rankToParsedName.get(rank);
-					if (inputParsedName.getCanonicalName().getFull().equalsIgnoreCase((String) row[2]))
-						score++;
-				}
-				if (maxScore < score) {
-					maxScore = score;
-					matchedTaxonomy = taxonomyDefinition;
-				}
-			}
-			return matchedTaxonomy;
+		String verbatim = parsedName.getVerbatim().trim();
+		for (TaxonomyDefinition taxonomyDefinition : taxonomyDefinitions) {
+			if (!status.name().equalsIgnoreCase(taxonomyDefinition.getStatus()))
+				continue;
+			if (taxonomyDefinition.getName().equals(verbatim))
+				return taxonomyDefinition;
 		}
-
 		return null;
 	}
 
@@ -477,11 +548,14 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				String[] data = it.next();
 				TaxonomySave taxonomySave = fileMetaData.readOneRow(utilityServiceApi, data);
 				if (taxonomySave != null) {
+
 					List<TaxonomyDefinition> createdTaxonomy = addTaxonomyDefintionNodes(request, taxonomySave);
+
+					// Push taxonomy to the elastic
 					if (createdTaxonomy != null && !createdTaxonomy.isEmpty()) {
-						for (TaxonomyDefinition taxonomyDefinition : createdTaxonomy) {
-							if (taxonomyDefinition != null)
-								taxonIds.add(taxonomyDefinition.getId());
+						for (TaxonomyDefinition td : createdTaxonomy) {
+							if (td != null)
+								taxonIds.add(td.getId());
 						}
 					}
 				}
@@ -541,8 +615,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			String activityType = "";
 			Long synonymId = null;
 			String name = "";
-			TaxonomyDefinition synonymCheck = findByCanonicalName(parsedName, synonymRank, TaxonomyStatus.SYNONYM,
-					null);
+			TaxonomyDefinition synonymCheck = getLeafMatchedNode(parsedName, synonymRank, TaxonomyStatus.SYNONYM);
 
 			if (synonymData.getId() == null) {
 				if (synonymCheck == null) {
@@ -719,87 +792,107 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	}
 
 	@Override
-	public TaxonomyDefinition updateStatus(TaxonomyStatusUpdate taxonomyStatusUpdate) {
-		
+	public TaxonomyDefinition updateStatus(HttpServletRequest request, TaxonomyStatusUpdate taxonomyStatusUpdate)
+			throws ApiException, TaxonCreationException {
+
+		CommonProfile profile = AuthUtil.getProfileFromRequest(request);
+		Long userId = Long.parseLong(profile.getId());
+
 		Long taxonId = taxonomyStatusUpdate.getTaxonId();
 		TaxonomyStatus taxonomyStatus = taxonomyStatusUpdate.getStatus();
 		Map<String, String> hierarchy = taxonomyStatusUpdate.getHierarchy();
 		Long newTaxonId = taxonomyStatusUpdate.getNewTaxonId();
-		
+
 		TaxonomyDefinition taxonomyDefinition;
-		
+
 		try {
 			taxonomyDefinition = findById(taxonId);
 		} catch (NoResultException e) {
 			throw new NoResultException("Not able to find the given taxon");
 		}
-		
-		if(taxonomyDefinition.getStatus().equalsIgnoreCase(taxonomyStatus.name())) {
+
+		if (taxonomyDefinition.getStatus().equalsIgnoreCase(taxonomyStatus.name())) {
 			// Status is not changed so no need to update.
 			return taxonomyDefinition;
 		}
-		
+
 		switch (taxonomyStatus) {
 		// Status is changing from synonym to accepted.
 		case ACCEPTED:
-			if(hierarchy == null) 
+			if (hierarchy == null)
 				throw new IllegalArgumentException("Hierarchy is required");
 
 			// Remove the link with any other accepted name
 			List<AcceptedSynonym> acceptedSynonyms = acceptedSynonymDao.findBySynonymId(taxonId);
-			for(AcceptedSynonym acceptedSynonym :acceptedSynonyms) {
+			for (AcceptedSynonym acceptedSynonym : acceptedSynonyms) {
 				acceptedSynonymDao.delete(acceptedSynonym);
 			}
-			
+
 			// Add the hierarchy and the node
-			TaxonomySave taxonomySave = new TaxonomySave();
-			taxonomySave.setPosition(TaxonomyPosition.RAW);
-			taxonomySave.setRank(taxonomyDefinition.getRank());
-			taxonomySave.setRankToName(hierarchy);
-			//taxonomySave.setScientificName(taxonomyDefinition.get);
-			
-			// Update the tree
-			
-			// Update the elastic for all the accepted name it was associated and the node itself
-			
+			Map<String, ParsedName> rankToParsedName = new HashMap<String, ParsedName>();
+			for (Map.Entry<String, String> e : taxonomyStatusUpdate.getHierarchy().entrySet()) {
+				ParsedName parsedName = utilityServiceApi.getNameParsed(e.getValue());
+				rankToParsedName.put(e.getKey(), parsedName);
+			}
+			List<Rank> ranks = rankService.getAllRank(request);
+			TaxonomyPosition position = TaxonomyPosition.fromValue(taxonomyDefinition.getPosition());
+
+			StringBuilder path = new StringBuilder();
+			updateAndCreateHierarchy(path, ranks, rankToParsedName, position, taxonomyDefinition.getViaDatasource(),
+					taxonomyDefinition.getNameSourceId(), userId);
+
+			// Update the tree and add to the registry
+			path.append(".");
+			path.append(taxonId);
+			taxonomyRegistryDao.createRegistry(1L, path.toString(), taxonomyDefinition.getRank(), taxonId);
+
+			// Update the status
+			taxonomyDefinition.setStatus(TaxonomyStatus.ACCEPTED.name());
+			taxonomyDefinition = update(taxonomyDefinition);
+
+			// Update the elastic for all the accepted name it was associated and the node
+			List<Long> taxonIds = new ArrayList<Long>();
+			taxonIds.add(taxonId);
+			taxonomyESUpdate.pushToElastic(taxonIds);
+
 			break;
 		// status is changing from accepted to synonym
 		case SYNONYM:
-			if(newTaxonId == null)
+			if (newTaxonId == null)
 				throw new IllegalArgumentException("New taxonomy is required to assign all the children");
-			
+
 			TaxonomyDefinition acceptedTaxonomy = taxonomyDao.findById(newTaxonId);
-			
-			if(acceptedTaxonomy == null)
+
+			if (acceptedTaxonomy == null)
 				throw new IllegalArgumentException("Could not find the accepted taxonomy with the Id you provided");
-			
+
 			taxonomyDefinition.setStatus(TaxonomyStatus.SYNONYM.name());
-			
+
 			// Taxonomy Id to be updated for elastic search
-			List<Long> taxonIds = taxonomyDao.getAllChildren(taxonId);
+			taxonIds = taxonomyDao.getAllChildren(taxonId);
 			acceptedSynonyms = acceptedSynonymDao.findByAccepetdId(taxonId);
-			for(AcceptedSynonym acceptedSynonym : acceptedSynonyms) {
+			for (AcceptedSynonym acceptedSynonym : acceptedSynonyms) {
 				taxonIds.add(acceptedSynonym.getSynonymId());
 			}
 			taxonIds.add(newTaxonId);
-			
+
 			// Make relevant update to the database.
 			TaxonomyRegistry oldTaxonomyRegistry = taxonomyRegistryDao.findbyTaxonomyId(taxonId);
 			TaxonomyRegistry newTaxonomyRegistry = taxonomyRegistryDao.findbyTaxonomyId(newTaxonId);
 			taxonomyDao.updateStatusToSynonymInDB(newTaxonomyRegistry, oldTaxonomyRegistry);
-			
+
 			// Update the status for given taxon node.
 			taxonomyDefinition = update(taxonomyDefinition);
-			
-			// Update elastic search for the taxon 
+
+			// Update elastic search for the taxon
 			taxonomyESUpdate.pushToElastic(taxonIds);
-			
+
 			break;
-			
+
 		default:
 			break;
 		}
-		
+
 		return taxonomyDefinition;
 	}
 }
