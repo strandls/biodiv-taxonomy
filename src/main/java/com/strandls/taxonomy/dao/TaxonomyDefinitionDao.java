@@ -3,7 +3,9 @@
  */
 package com.strandls.taxonomy.dao;
 
+import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -21,7 +23,12 @@ import com.strandls.taxonomy.TaxonomyConfig;
 import com.strandls.taxonomy.pojo.AcceptedSynonym;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.pojo.TaxonomyRegistry;
+import com.strandls.taxonomy.pojo.enumtype.TaxonomyPosition;
+import com.strandls.taxonomy.pojo.enumtype.TaxonomyStatus;
+import com.strandls.taxonomy.service.exception.TaxonCreationException;
 import com.strandls.taxonomy.util.AbstractDAO;
+import com.strandls.taxonomy.util.TaxonomyUtil;
+import com.strandls.utility.pojo.ParsedName;
 
 /**
  * @author Abhishek Rudra
@@ -202,5 +209,38 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 			session.close();
 		}
 		return 0;
+	}
+	
+	public TaxonomyDefinition createTaxonomyDefiniiton(ParsedName parsedName, String rankName,
+			TaxonomyStatus taxonomyStatus, TaxonomyPosition taxonomyPosition, String source, String sourceId,
+			Long uploaderId) throws TaxonCreationException {
+		if (parsedName == null || parsedName.getCanonicalName() == null)
+			throw new TaxonCreationException("Not valid name");
+		String canonicalName = parsedName.getCanonicalName().getFull();
+		String binomialName = TaxonomyUtil.getBinomialName(canonicalName);
+		String italicisedForm = TaxonomyUtil.getItalicisedForm(parsedName, rankName);
+		Timestamp uploadTime = new Timestamp(new Date().getTime());
+		String status = taxonomyStatus.name();
+		String position = taxonomyPosition.name();
+		String classs = "species.TaxonomyDefinition";
+
+		TaxonomyDefinition taxonomyDefinition = new TaxonomyDefinition();
+		taxonomyDefinition.setBinomialForm(binomialName);
+		taxonomyDefinition.setCanonicalForm(canonicalName);
+		taxonomyDefinition.setItalicisedForm(italicisedForm);
+		taxonomyDefinition.setName(parsedName.getVerbatim().trim());
+		taxonomyDefinition.setNormalizedForm(parsedName.getNormalized());
+		taxonomyDefinition.setRank(rankName);
+		taxonomyDefinition.setUploadTime(uploadTime);
+		taxonomyDefinition.setUploaderId(uploaderId);
+		taxonomyDefinition.setStatus(status);
+		taxonomyDefinition.setPosition(position);
+		taxonomyDefinition.setClasss(classs);
+		taxonomyDefinition.setViaDatasource(source);
+		taxonomyDefinition.setNameSourceId(sourceId);
+		taxonomyDefinition.setAuthorYear(parsedName.getAuthorship());
+		taxonomyDefinition.setIsDeleted(false);
+		taxonomyDefinition = save(taxonomyDefinition);
+		return taxonomyDefinition;
 	}
 }

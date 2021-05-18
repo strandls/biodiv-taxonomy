@@ -7,9 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.sql.Timestamp;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -151,20 +149,20 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		try {
 			createdTaxonomy = addTaxonomy(request, taxonomySave);
 		} catch (TaxonCreationException e) {
-			return null;
+			return new ArrayList<TaxonomyDefinition>();
 		} catch (UnRecongnizedRankException e) {
-			return null;
+			return new ArrayList<TaxonomyDefinition>();
 		}
 
 		if (createdTaxonomy == null || createdTaxonomy.isEmpty())
-			return null;
+			return new ArrayList<TaxonomyDefinition>();
 
 		return createdTaxonomy;
 	}
 
 	private TaxonomyDefinition createRoot(StringBuilder path) throws ApiException, TaxonCreationException {
 		ParsedName parsedName = utilityServiceApi.getNameParsed("Root");
-		TaxonomyDefinition taxonomyDefinition = createTaxonomyDefiniiton(parsedName, "root", TaxonomyStatus.ACCEPTED,
+		TaxonomyDefinition taxonomyDefinition = taxonomyDao.createTaxonomyDefiniiton(parsedName, "root", TaxonomyStatus.ACCEPTED,
 				TaxonomyPosition.CLEAN, null, null, null);
 		Long taxonomyDefinitionId = taxonomyDefinition.getId();
 
@@ -202,44 +200,6 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		taxonomyDefinition = taxonomyDao.update(taxonomyDefinition);
 		return taxonomyDefinition;
 
-	}
-
-	private TaxonomyDefinition createTaxonomyDefiniiton(ParsedName parsedName, String rankName,
-			TaxonomyStatus taxonomyStatus, TaxonomyPosition taxonomyPosition, String source, String sourceId,
-			Long userId) throws TaxonCreationException {
-		if (parsedName == null || parsedName.getCanonicalName() == null)
-			throw new TaxonCreationException("Not valid name");
-		String canonicalName = parsedName.getCanonicalName().getFull();
-		String binomialName = TaxonomyUtil.getBinomialName(canonicalName);
-		String italicisedForm = TaxonomyUtil.getItalicisedForm(parsedName, rankName);
-		Timestamp uploadTime = new Timestamp(new Date().getTime());
-		Long uploaderId = null;
-		if (userId == null)
-			uploaderId = UPLOADER_ID;
-		else
-			uploaderId = userId;
-		String status = taxonomyStatus.name();
-		String position = taxonomyPosition.name();
-		String classs = "species.TaxonomyDefinition";
-
-		TaxonomyDefinition taxonomyDefinition = new TaxonomyDefinition();
-		taxonomyDefinition.setBinomialForm(binomialName);
-		taxonomyDefinition.setCanonicalForm(canonicalName);
-		taxonomyDefinition.setItalicisedForm(italicisedForm);
-		taxonomyDefinition.setName(parsedName.getVerbatim().trim());
-		taxonomyDefinition.setNormalizedForm(parsedName.getNormalized());
-		taxonomyDefinition.setRank(rankName);
-		taxonomyDefinition.setUploadTime(uploadTime);
-		taxonomyDefinition.setUploaderId(uploaderId);
-		taxonomyDefinition.setStatus(status);
-		taxonomyDefinition.setPosition(position);
-		taxonomyDefinition.setClasss(classs);
-		taxonomyDefinition.setViaDatasource(source);
-		taxonomyDefinition.setNameSourceId(sourceId);
-		taxonomyDefinition.setAuthorYear(parsedName.getAuthorship());
-		taxonomyDefinition.setIsDeleted(false);
-		taxonomyDefinition = save(taxonomyDefinition);
-		return taxonomyDefinition;
 	}
 
 	private List<TaxonomyDefinition> addTaxonomy(HttpServletRequest request, TaxonomySave taxonomyData)
@@ -280,7 +240,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 			// Name can be synonym as well, so kept the hierarchy creation and registry
 			// creation separate
-			taxonomyDefinition = createTaxonomyDefiniiton(parsedName, rankName, status, position, source, sourceId,
+			taxonomyDefinition = taxonomyDao.createTaxonomyDefiniiton(parsedName, rankName, status, position, source, sourceId,
 					userId);
 			taxonomyDefinitions.add(taxonomyDefinition);
 
@@ -463,7 +423,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					userId);
 
 			// Generate node here and go for the higher hierarchy
-			taxonomyDefinition = createTaxonomyDefiniiton(parsedName, highestRankName, TaxonomyStatus.ACCEPTED,
+			taxonomyDefinition = taxonomyDao.createTaxonomyDefiniiton(parsedName, highestRankName, TaxonomyStatus.ACCEPTED,
 					position, source, sourceId, userId);
 			createdHierarchy.put(highestRankName, taxonomyDefinition);
 
@@ -524,6 +484,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	@Override
 	public Map<String, Object> uploadFile(HttpServletRequest request, FormDataMultiPart multiPart)
 			throws IOException, ApiException, InterruptedException, ExecutionException {
+		Map<String, Object>  result = new HashMap<String, Object>();
 		Long startTime = System.currentTimeMillis();
 		FormDataBodyPart formdata = multiPart.getField("metadata");
 		if (formdata == null) {
@@ -567,7 +528,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		}
 		Long endTime = System.currentTimeMillis();
 		System.out.println("Total time : " + (endTime - startTime));
-		return null;
+		result.put("status", "success");
+		result.put("uploadTime (in ms) : ", (endTime-startTime));
+		return result;
 	}
 
 	@Override
@@ -620,7 +583,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			if (synonymData.getId() == null) {
 				if (synonymCheck == null) {
 
-					synonymTaxonomy = createTaxonomyDefiniiton(parsedName, synonymRank, TaxonomyStatus.SYNONYM,
+					synonymTaxonomy = taxonomyDao.createTaxonomyDefiniiton(parsedName, synonymRank, TaxonomyStatus.SYNONYM,
 							TaxonomyPosition.RAW, synonymData.getDataSource(), synonymData.getDataSourceId(), userId);
 					synonymId = synonymTaxonomy.getId();
 					name = synonymTaxonomy.getName();
