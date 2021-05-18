@@ -6,80 +6,49 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 public class TaxonRelation {
-	
-	private Long taxonId;
-	private String path;
-	private Long parent;
-	private String text;
-	private Long classification;
+
 	private Long id;
+	private String name;
 	private String rank;
+	private String path;
+	private Long classification;
+	private Long parent;
 	private String position;
-	List<String> ids=new ArrayList<String>();
-	
+
 	@JsonInclude(JsonInclude.Include.NON_EMPTY)
-    private List<TaxonRelation> children = new ArrayList<TaxonRelation>();
+	private List<TaxonRelation> children = new ArrayList<TaxonRelation>();
 
 	public TaxonRelation() {
 		super();
 	}
 
-	public TaxonRelation(Long taxonId, String path, Long parent, String text, Long classification, Long id, String rank,
-			String position, List<String> ids) {
+	public TaxonRelation(Long id, String name, String rank, String path, Long classification, Long parent,
+			String position) {
 		super();
-		this.taxonId = taxonId;
-		this.path = path;
-		this.parent = parent;
-		this.text = text;
-		this.classification = classification;
 		this.id = id;
+		this.name = name;
 		this.rank = rank;
+		this.path = path;
+		this.classification = classification;
+		this.parent = parent;
 		this.position = position;
-		this.ids = ids;
 	}
-	
+
+	public TaxonRelation(Long id, String name, String rank, String path, Long classification, Long parent,
+			String position, List<TaxonRelation> children) {
+		super();
+		this.id = id;
+		this.name = name;
+		this.rank = rank;
+		this.path = path;
+		this.classification = classification;
+		this.parent = parent;
+		this.position = position;
+		this.children = children;
+	}
+
 	public void addChild(TaxonRelation child) {
 		children.add(child);
-	}
-
-	public Long getTaxonId() {
-		return taxonId;
-	}
-
-	public void setTaxonId(Long taxonId) {
-		this.taxonId = taxonId;
-	}
-
-	public String getPath() {
-		return path;
-	}
-
-	public void setPath(String path) {
-		this.path = path;
-	}
-
-	public Long getParent() {
-		return parent;
-	}
-
-	public void setParent(Long parent) {
-		this.parent = parent;
-	}
-
-	public String getText() {
-		return text;
-	}
-
-	public void setText(String text) {
-		this.text = text;
-	}
-
-	public Long getClassification() {
-		return classification;
-	}
-
-	public void setClassification(Long classification) {
-		this.classification = classification;
 	}
 
 	public Long getId() {
@@ -90,12 +59,44 @@ public class TaxonRelation {
 		this.id = id;
 	}
 
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
 	public String getRank() {
 		return rank;
 	}
 
 	public void setRank(String rank) {
 		this.rank = rank;
+	}
+
+	public String getPath() {
+		return path;
+	}
+
+	public void setPath(String path) {
+		this.path = path;
+	}
+
+	public Long getClassification() {
+		return classification;
+	}
+
+	public void setClassification(Long classification) {
+		this.classification = classification;
+	}
+
+	public Long getParent() {
+		return parent;
+	}
+
+	public void setParent(Long parent) {
+		this.parent = parent;
 	}
 
 	public String getPosition() {
@@ -106,19 +107,11 @@ public class TaxonRelation {
 		this.position = position;
 	}
 
-	public List<String> getIds() {
-		return ids;
-	}
-
-	public void setIds(List<String> ids) {
-		this.ids = ids;
-	}
-
 	public List<TaxonRelation> getChildren() {
 		return children;
 	}
 
 	public void setChildren(List<TaxonRelation> children) {
 		this.children = children;
-	}	
+	}
 }

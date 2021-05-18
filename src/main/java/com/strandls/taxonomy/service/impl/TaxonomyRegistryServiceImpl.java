@@ -21,16 +21,6 @@ import com.strandls.taxonomy.util.AbstractService;
 
 public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistry> implements TaxonomyRegistryService {
 
-	private static final String ID = "id";
-	private static final String taxonid = "taxonid";
-	private static final String text = "text";
-	private static final String rank = "rank";
-	private static final String path = "path";
-	private static final String classification = "classification";
-	private static final String totalPath = "totalPath";
-	private static final String parent = "parent";
-	private static final String position = "position";
-
 	@Inject
 	private TaxonomyRegistryDao taxonomyRegistryDao;
 
@@ -93,35 +83,7 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 		}
 
 		try {
-			List<Object[]> taxonList = taxonomyRegistryDao.list(parent, taxonID, expandTaxon);
-			List<String> data = null;
-
-			if (taxonID != null) {
-				data = taxonomyRegistryDao.getPathToRoot(taxonID);
-			}
-
-			List<Map<String, Object>> res = new ArrayList<Map<String, Object>>();
-
-			for (Object[] t : taxonList) {
-				Map<String, Object> m = new HashMap<String, Object>();
-				m.put(ID, t[0]);
-				m.put(taxonid, t[0]);
-				m.put(text, t[1]);
-				m.put(rank, t[2]);
-				m.put(path, t[3]);
-				m.put(classification, t[4]);
-				m.put(position, t[6]);
-				m.put(totalPath, data);
-
-				if (t[5] != null) {
-					m.put("parent", t[5]);
-				} else {
-					m.put("parent", "0");
-				}
-				res.add(m);
-			}
-
-			List<TaxonRelation> inputItems = createInputItems(res);
+			List<TaxonRelation> inputItems = taxonomyRegistryDao.list(parent, taxonID, expandTaxon);
 
 			if (expandTaxon) {
 				if (taxonIds != null) {
@@ -142,51 +104,23 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 	 * @return dummy
 	 */
 	private List<TaxonRelation> buildHierarchy(List<TaxonRelation> items) {
-		List<TaxonRelation> result = new ArrayList<TaxonRelation>();
-		Map<Long, TaxonRelation> idItemMap = prepareIdItemMap(items);
+	
+		Map<Long, TaxonRelation> idItemMap = new HashMap<Long, TaxonRelation>();
+		for (TaxonRelation item : items) {
+			idItemMap.put(item.getId(), item);
+		}
 
+		List<TaxonRelation> result = new ArrayList<TaxonRelation>();
 		for (TaxonRelation item : items) {
 			Long parentId = item.getParent();
 
-			if (parentId == 0) {
+			if (parentId == null || !idItemMap.containsKey(parentId)) {
 				result.add(item);
 			} else {
-				idItemMap.get(parentId).addChild(item);
+				TaxonRelation relation = idItemMap.get(parentId);
+				relation.addChild(item);
 			}
 		}
 		return result;
 	}
-
-	/**
-	 * 
-	 * @param items dummy
-	 * @return dummy
-	 */
-	private Map<Long, TaxonRelation> prepareIdItemMap(List<TaxonRelation> items) {
-		HashMap<Long, TaxonRelation> result = new HashMap<>();
-
-		for (TaxonRelation eachItem : items) {
-			result.put(Long.valueOf(eachItem.getId()), eachItem);
-		}
-		return result;
-
-	}
-
-	/**
-	 * 
-	 * @param res dummy
-	 * @return dummy
-	 */
-	@SuppressWarnings("unchecked")
-	private List<TaxonRelation> createInputItems(List<Map<String, Object>> res) {
-		List<TaxonRelation> result = new ArrayList<>();
-		for (Map<String, Object> data : res) {
-			result.add(new TaxonRelation(Long.parseLong((String) data.get(taxonid)), (String) data.get(path),
-					(Long.parseLong((String) data.get(parent))), (String) data.get(text),
-					Long.parseLong((String) data.get(classification)), (Long.parseLong((String) data.get(ID))),
-					(String) data.get(rank), (String) data.get(position), (List<String>) data.get(totalPath)));
-		}
-		return result;
-	}
-
 }

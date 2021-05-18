@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.persistence.Column;
+import javax.persistence.ColumnResult;
+import javax.persistence.ConstructorResult;
 import javax.persistence.Entity;
 import javax.persistence.EntityResult;
 import javax.persistence.FieldResult;
@@ -16,6 +18,7 @@ import org.hibernate.annotations.TypeDefs;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.strandls.taxonomy.pojo.response.TaxonRelation;
 import com.vladmihalcea.hibernate.type.array.ListArrayType;
 import com.vladmihalcea.hibernate.type.json.JsonStringType;
 
@@ -34,6 +37,14 @@ import com.vladmihalcea.hibernate.type.json.JsonStringType;
 				@FieldResult(name = "group_name", column = "group_name") }) })
 @TypeDefs({ @TypeDef(name = "jsonb", typeClass = JsonStringType.class),
 		@TypeDef(name = "list-array", typeClass = ListArrayType.class), })
+
+@SqlResultSetMapping(name = "TaxonomyRelation", classes = {
+		@ConstructorResult(targetClass = TaxonRelation.class, columns = { @ColumnResult(name = "id", type = Long.class),
+				@ColumnResult(name = "name", type = String.class), @ColumnResult(name = "rank", type = String.class),
+				@ColumnResult(name = "path", type = String.class),
+				@ColumnResult(name = "classification", type = Long.class),
+				@ColumnResult(name = "parent", type = Long.class),
+				@ColumnResult(name = "position", type = String.class) }) })
 @Entity
 @JsonIgnoreProperties
 public class TaxonomyESDocument {

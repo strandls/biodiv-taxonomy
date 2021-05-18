@@ -55,6 +55,7 @@ import com.strandls.taxonomy.service.TaxonomyDefinitionSerivce;
 import com.strandls.taxonomy.service.exception.TaxonCreationException;
 import com.strandls.taxonomy.service.exception.UnRecongnizedRankException;
 import com.strandls.taxonomy.util.AbstractService;
+import com.strandls.taxonomy.util.TaxonomyCache;
 import com.strandls.taxonomy.util.TaxonomyUtil;
 import com.strandls.utility.ApiException;
 import com.strandls.utility.controller.UtilityServiceApi;
@@ -91,6 +92,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 	@Inject
 	private ObjectMapper objectMapper;
+	
+	@Inject
+	private TaxonomyCache<String, ParsedName> taxonomyCache;
 
 	@Inject
 	private LogActivities logActivity;
@@ -213,8 +217,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		// Check for the valid hierarchy if the status is accepted.
 		TaxonomyStatus status = taxonomyData.getStatus();
 		TaxonomyPosition position = taxonomyData.getPosition();
-		List<Rank> ranks = rankService.getAllRank(request);
-
+		List<Rank> ranks = taxonomyCache.getRanks();
+		
 		String source = taxonomyData.getSource();
 		String sourceId = taxonomyData.getSourceId();
 
@@ -224,7 +228,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		StringBuilder path = new StringBuilder();
 		Map<String, TaxonomyDefinition> hierarchyCreated = new LinkedHashMap<String, TaxonomyDefinition>();
 
-		ParsedName parsedName = utilityServiceApi.getNameParsed(scientificName);
+		ParsedName parsedName = taxonomyCache.getName(rankName, scientificName);
 		TaxonomyDefinition taxonomyDefinition = getLeafMatchedNode(parsedName, rankName, status);
 
 		List<TaxonomyDefinition> taxonomyDefinitions = new ArrayList<TaxonomyDefinition>();
@@ -316,7 +320,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 			// If any of these exception occurs then we are skipping the synonym.
 			try {
-				synonymParsedName = utilityServiceApi.getNameParsed(synonymName);
+				synonymParsedName = taxonomyCache.getName(rankName, synonymName);
 				synonymRank = TaxonomyUtil.getRankForSynonym(synonymParsedName, rankName);
 			} catch (ApiException e) {
 				logger.error("Invalie name for the synonym : " + synonymName);
@@ -360,9 +364,10 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	 * @return
 	 * @throws ApiException           - If there is any micro-service down.
 	 * @throws TaxonCreationException - There is problem with hierarchy creation.
+	 * @throws UnRecongnizedRankException 
 	 */
 	private Map<String, TaxonomyDefinition> updateAndCreateHierarchyUtil(StringBuilder path, List<Rank> ranks,
-			Long userId, TaxonomySave taxonomyData) throws ApiException, TaxonCreationException {
+			Long userId, TaxonomySave taxonomyData) throws ApiException, TaxonCreationException, UnRecongnizedRankException {
 
 		Map<String, String> rankToName = taxonomyData.getRankToName();
 		String source = taxonomyData.getSource();
@@ -384,7 +389,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		// Generate the rank to parse name pool of object.
 		Map<String, ParsedName> rankToParsedName = new HashMap<String, ParsedName>();
 		for (Map.Entry<String, String> e : rankToName.entrySet()) {
-			ParsedName parsedName = utilityServiceApi.getNameParsed(e.getValue());
+			ParsedName parsedName = taxonomyCache.getName(e.getKey(), e.getValue());
 			rankToParsedName.put(e.getKey().toLowerCase(), parsedName);
 		}
 
@@ -446,14 +451,18 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		int maxScore = 0;
 		TaxonomyDefinition matchedTaxonomy = null;
 		for (TaxonomyDefinition taxonomyDefinition : taxonomyDefinitions) {
-			List<Object[]> hierarchy = taxonomyRegistryDao.getHierarchy(taxonomyDefinition.getId());
+			
+			List<TaxonomyRegistryResponse> hierarchy = taxonomyRegistryDao.getPathToRoot(taxonomyDefinition.getId());
 			int score = 0;
-			for (Object[] row : hierarchy) {
-				String rank = (String) row[1];
+
+			for(TaxonomyRegistryResponse r : hierarchy) {
+				String rank = r.getRank();
+				String name = r.getCanonicalForm();
 				ParsedName inputParsedName = rankToParsedName.get(rank);
-				if (inputParsedName.getCanonicalName().getFull().equalsIgnoreCase((String) row[2]))
+				if (inputParsedName.getCanonicalName().getFull().equalsIgnoreCase(name))
 					score++;
 			}
+			
 			if (maxScore < score) {
 				maxScore = score;
 				matchedTaxonomy = taxonomyDefinition;
@@ -530,6 +539,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		System.out.println("Total time : " + (endTime - startTime));
 		result.put("status", "success");
 		result.put("uploadTime (in ms) : ", (endTime-startTime));
+		result.put("Cache hit : ", TaxonomyCache.getCacheHit());
+		result.put("Cache miss : ", TaxonomyCache.getCacheMiss());
 		return result;
 	}
 

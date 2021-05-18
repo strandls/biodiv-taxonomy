@@ -15,20 +15,20 @@ import com.strandls.utility.pojo.ParsedName;
 
 public class TaxonomyCache<K, V> {
 
-	@Inject
-	private RankSerivce rankSerivce;
-	
 	private List<Rank> ranks;
 
 	private Map<String, TaxonomyParsedNameCache> rankToCache;
+	private static long cacheHit = 0;
+	private static long cacheMiss = 0;
 	
 	@Inject
-	public TaxonomyCache() {
+	public TaxonomyCache(RankSerivce rankSerivce, UtilityServiceApi utilityServiceApi) {
 		ranks = rankSerivce.getAllRank(null);
 		rankToCache = new HashMap<String, TaxonomyParsedNameCache>();
 		for (Rank rank : ranks) {
 			int size = (int) (rank.getRankValue() * 5);
-			rankToCache.put(rank.getName(), new TaxonomyParsedNameCache(size));
+			size = size == 0 ? 1 : size;
+			rankToCache.put(rank.getName(), new TaxonomyParsedNameCache(utilityServiceApi, size));
 		}
 	}
 
@@ -43,15 +43,29 @@ public class TaxonomyCache<K, V> {
 	public List<Rank> getRanks() {
 		return ranks;
 	}
+
+	public static void increamentCacheHit() {
+		cacheHit++;
+	}
+
+	public static void increamentCacheMiss() {
+		cacheMiss++;
+	}
+	public static long getCacheHit() {
+		return cacheHit;
+	}
+	public static long getCacheMiss() {
+		return cacheMiss;
+	}
 }
 
 class TaxonomyParsedNameCache extends Cache<String, ParsedName>{
 
-	@Inject
 	private UtilityServiceApi utilityServiceApi;
 	
-	public TaxonomyParsedNameCache(int Size) {
+	public TaxonomyParsedNameCache(UtilityServiceApi utilityServiceApi, int Size) {
 		super(Size);
+		this.utilityServiceApi = utilityServiceApi;
 	}
 
 	@Override
@@ -79,10 +93,12 @@ abstract class Cache<K, V> {
 	public V getValue(K k) {
 		DLLNode<K, V> node;
 		if (hashTable.containsKey(k)) {
+			TaxonomyCache.increamentCacheHit();
 			node = hashTable.get(k);
 			doublyLinkedList.remove(node);
 			doublyLinkedList.addLast(node);
 		} else {
+			TaxonomyCache.increamentCacheMiss();
 			V v = getNewValue(k);
 			node = new DLLNode<K, V>(k, v);
 			if (doublyLinkedList.isFull()) {
@@ -110,6 +126,8 @@ class DLLNode<K, V> {
 	public DLLNode(K k, V v) {
 		this.key = k;
 		this.value = v;
+		this.next = null;
+		this.prev = null;
 	}
 
 	public K getKey() {
@@ -166,6 +184,7 @@ class DoublyLinkedList<K, V> {
 			node.getPrev().setNext(node.getNext());
 		else
 			first = node.getNext();
+		currSize--;
 
 		node.setNext(null);
 		node.setPrev(null);
@@ -173,14 +192,18 @@ class DoublyLinkedList<K, V> {
 	}
 
 	public DLLNode<K, V> addLast(DLLNode<K, V> node) {
+		node.setPrev(last);
+		node.setNext(null);
+
 		if (last == null) {
 			first = node;
 			last = node;
+		} else {
+			last.setNext(node);
+			last = node;
 		}
-		node.setPrev(last);
-		node.setNext(null);
-		last.setNext(node);
-		last = node;
+		
+		currSize++;
 		return node;
 	}
 
@@ -190,9 +213,11 @@ class DoublyLinkedList<K, V> {
 		}
 		DLLNode<K, V> node = first;
 		first = first.getNext();
+		if(first == null) 
+			last = null;
 		node.setNext(null);
 		node.setPrev(null);
-
+		currSize--;
 		return node;
 	}
 }
