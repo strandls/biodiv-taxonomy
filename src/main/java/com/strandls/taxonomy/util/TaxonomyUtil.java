@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -31,7 +32,7 @@ public class TaxonomyUtil {
 	private TaxonomyUtil() {
 
 	}
-	
+
 	public static String getBinomialName(String canonicalName) {
 		String[] nameTokens = canonicalName.split(" ");
 		String binomialName;
@@ -42,13 +43,37 @@ public class TaxonomyUtil {
 		return binomialName;
 	}
 
-	public static Double getHighestInputRank(List<Rank> ranks, Map<String, String> inputRanks) {
+	public static Double getHighestInputRank(List<Rank> ranks, Set<String> rankNames) {
 		Double highestRank = -1.0;
 		for (Rank rank : ranks)
-			if (inputRanks.containsKey(rank.getName()))
+			if (rankNames.contains(rank.getName()))
 				highestRank = highestRank < rank.getRankValue() ? rank.getRankValue() : highestRank;
 
 		return highestRank;
+	}
+
+	public static String getHighestInputRankName(List<Rank> ranks, Set<String> rankNames) {
+		Double highestRank = -1.0;
+		String highestRankName = "";
+		for (Rank rank : ranks)
+			if (rankNames.contains(rank.getName()) && highestRank < rank.getRankValue()) {
+				highestRank = rank.getRankValue();
+				highestRankName = rank.getName();
+			}
+
+		return highestRankName;
+	}
+	
+	public static boolean validateHierarchy(List<Rank> ranks, Set<String> rankNames) {
+
+		Double highestRank = TaxonomyUtil.getHighestInputRank(ranks, rankNames);
+		for (Rank rank : ranks) {
+			if (rank.getRankValue() > highestRank)
+				continue;
+			if (rank.getIsRequired().booleanValue() && !rankNames.contains(rank.getName()))
+				return false;
+		}
+		return true;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -130,4 +155,5 @@ public class TaxonomyUtil {
 		JSONArray roles = (JSONArray) profile.getAttribute("roles");
 		return roles.contains("ROLE_ADMIN");
 	}
+
 }

@@ -11,6 +11,7 @@ import com.strandls.taxonomy.service.SpeciesGroupService;
 import com.strandls.taxonomy.service.TaxonomyDefinitionSerivce;
 import com.strandls.taxonomy.service.TaxonomyPermisisonService;
 import com.strandls.taxonomy.service.TaxonomyRegistryService;
+import com.strandls.taxonomy.util.TaxonomyCache;
 
 /**
  * @author Abhishek Rudra
@@ -28,5 +29,6 @@ public class TaxonomyServiceModule extends AbstractModule {
 		bind(TaxonomyESOperation.class).in(Scopes.SINGLETON);
 		bind(LogActivities.class).in(Scopes.SINGLETON);
 		bind(TaxonomyPermisisonService.class).to(TaxonomyPermissionServiceImpl.class).in(Scopes.SINGLETON);
+		bind(TaxonomyCache.class).in(Scopes.SINGLETON);
 	}
 }

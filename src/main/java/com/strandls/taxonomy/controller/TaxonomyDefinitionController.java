@@ -3,8 +3,11 @@
  */
 package com.strandls.taxonomy.controller;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
@@ -27,6 +30,7 @@ import javax.ws.rs.core.Response.Status;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 
 import com.strandls.authentication_utility.filter.ValidateUser;
+import com.strandls.esmodule.pojo.MapQueryResponse;
 import com.strandls.taxonomy.ApiConstants;
 import com.strandls.taxonomy.dao.TaxonomyDefinitionDao;
 import com.strandls.taxonomy.pojo.SynonymData;
@@ -34,8 +38,11 @@ import com.strandls.taxonomy.pojo.TaxonomicNames;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.pojo.request.FileMetadata;
 import com.strandls.taxonomy.pojo.request.TaxonomySave;
+import com.strandls.taxonomy.pojo.request.TaxonomyStatusUpdate;
 import com.strandls.taxonomy.pojo.response.TaxonomySearch;
 import com.strandls.taxonomy.service.TaxonomyDefinitionSerivce;
+import com.strandls.taxonomy.service.impl.TaxonomyESOperation;
+import com.strandls.taxonomy.util.TaxonomyUtil;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -56,6 +63,9 @@ public class TaxonomyDefinitionController {
 
 	@Inject
 	private TaxonomyDefinitionDao taxonomyDefinitionDao;
+
+	@Inject
+	private TaxonomyESOperation taxonomyESOperation;
 
 	@GET
 	@Path("/{taxonomyConceptId}")
@@ -196,19 +206,41 @@ public class TaxonomyDefinitionController {
 			return Response.status(Status.BAD_GATEWAY).entity(e.getMessage()).build();
 		}
 	}
-	
+
 	@PUT
 	@Path("name")
 	@Consumes(MediaType.TEXT_PLAIN)
 	@Produces(MediaType.APPLICATION_JSON)
-	
+
 	@ValidateUser
-	
-	@ApiOperation(value = "Update the name of taxonomy", notes="Update the name. input name should be scientific name", response = TaxonomyDefinition.class)
-	@ApiResponses(value = {@ApiResponse(code = 400, message = "failed to update the name of taxonomy definition", response = String.class)})
-	public Response updateName(@Context HttpServletRequest request, @QueryParam("taxonId") Long taxonId, @QueryParam("taxonName") String taxonName) {
+
+	@ApiOperation(value = "Update the name of taxonomy", notes = "Update the name. input name should be scientific name", response = TaxonomyDefinition.class)
+	@ApiResponses(value = {
+			@ApiResponse(code = 400, message = "failed to update the name of taxonomy definition", response = String.class) })
+	public Response updateName(@Context HttpServletRequest request, @QueryParam("taxonId") Long taxonId,
+			@QueryParam("taxonName") String taxonName) {
 		try {
 			TaxonomyDefinition taxonomyDefinition = taxonomyService.updateName(taxonId, taxonName);
+			return Response.status(Status.OK).entity(taxonomyDefinition).build();
+		} catch (Exception e) {
+			throw new WebApplicationException(
+					Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
+		}
+	}
+
+	@PUT
+	@Path("status")
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ValidateUser
+
+	@ApiOperation(value = "Update the name of taxonomy", notes = "Update the status. Status should be either accepted or synonym", response = TaxonomyDefinition.class)
+	@ApiResponses(value = {
+			@ApiResponse(code = 400, message = "failed to update the name of taxonomy definition", response = String.class) })
+	public Response updateStatus(@Context HttpServletRequest request,
+			@ApiParam("status") TaxonomyStatusUpdate taxonomyStatusUpdate) {
+		try {
+			TaxonomyDefinition taxonomyDefinition = taxonomyService.updateStatus(request, taxonomyStatusUpdate);
 			return Response.status(Status.OK).entity(taxonomyDefinition).build();
 		} catch (Exception e) {
 			throw new WebApplicationException(
@@ -261,4 +293,29 @@ public class TaxonomyDefinitionController {
 		}
 	}
 
+	@PUT
+	@Path(ApiConstants.ELASTIC + ApiConstants.UPDATE)
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ValidateUser
+
+	@ApiOperation(value = "delete synonyms", notes = "Re-index the elastic for given taxon Ids", response = TaxonomyDefinition.class, responseContainer = "List")
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to delete the names", response = String.class) })
+
+	public Response updateElastic(@Context HttpServletRequest request, @QueryParam("taxonIds") String taxonIdsString) {
+		try {
+			if (TaxonomyUtil.isAdmin(request)) {
+				List<Long> taxonIds = Arrays.asList(taxonIdsString.split(",")).stream().map(x -> Long.parseLong(x))
+						.collect(Collectors.toList());
+				List<MapQueryResponse> mapQueryResponses = taxonomyESOperation.pushToElastic(taxonIds);
+				return Response.status(Status.OK).entity(mapQueryResponses).build();
+			} else
+				throw new WebApplicationException(
+						Response.status(Response.Status.UNAUTHORIZED).entity("Only admin can do the reindex").build());
+		} catch (Exception e) {
+			throw new WebApplicationException(
+					Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build());
+		}
+	}
 }

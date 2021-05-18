@@ -6,7 +6,6 @@ package com.strandls.taxonomy.dao;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
@@ -21,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.strandls.taxonomy.pojo.TaxonomyRegistry;
+import com.strandls.taxonomy.pojo.response.TaxonRelation;
 import com.strandls.taxonomy.pojo.response.TaxonomyRegistryResponse;
 import com.strandls.taxonomy.util.AbstractDAO;
 
@@ -67,7 +67,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		}
 		return entity;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public TaxonomyRegistry findbyTaxonomyId(Long taxonomyId) {
 
@@ -101,6 +101,15 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		}
 
 		return result;
+	}
+
+	public TaxonomyRegistry createRegistry(Long classificationId, String path, String rank, Long taxonDefinitionId) {
+		TaxonomyRegistry registry = new TaxonomyRegistry();
+		registry.setClassificationId(classificationId);
+		registry.setPath(path.toString());
+		registry.setTaxonomyDefinationId(taxonDefinitionId);
+		registry.setRank(rank);
+		return save(registry);
 	}
 
 	public List<String> findByTaxonIdOnTraitList(List<Long> traitTaxonIds, Set<String> speciesGroupTaxonIds) {
@@ -144,18 +153,17 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		return result;
 	}
 
-	public List<Object[]> list(Long parent, List<Long> taxonIds, boolean expandTaxon) {
+	public List<TaxonRelation> list(Long parent, List<Long> taxonIds, boolean expandTaxon) {
 		Session session = sessionFactory.openSession();
 		String queryString = "";
 		Query query;
 		if (parent == null && taxonIds == null) {
-			queryString = "select cast(t.id as varchar),t.name, t.rank, ltree2text(tR.path) as path, cast(tR.classification_id as varchar), "
+			queryString = "select t.id,t.name, t.rank, ltree2text(tR.path) as path, tR.classification_id as classification, "
 					+ " case when nlevel(tR.path) > 1 THEN ltree2text(subpath(tR.path,-2,1)) else null end as parent, t.position "
 					+ " from taxonomy_definition as t, taxonomy_registry as tR"
 					+ " where t.id=tR.taxon_definition_id and t.is_deleted=false  and tR.classification_id=:classification_id and "
-					+ " nlevel(tR.path) = 2" 
-					+ " order by nlevel(tR.path), t.name";
-			query = session.createNativeQuery(queryString);
+					+ " nlevel(tR.path) = 2" + " order by nlevel(tR.path), t.name";
+			query = session.createNativeQuery(queryString).setResultSetMapping("TaxonomyRelation");
 		} else {
 			String parentCheck = " ";
 			if (expandTaxon && taxonIds != null && !taxonIds.isEmpty()) {
@@ -165,13 +173,12 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 			} else if (parent != null) {
 				parentCheck = "*." + parent + ".*{1}";
 			}
-			queryString = "select cast(t.id as varchar),t.name, t.rank, ltree2text(tR.path) as path, cast(tR.classification_id as varchar), "
+			queryString = "select t.id, t.name, t.rank, ltree2text(tR.path) as path, tR.classification_id as classification, "
 					+ " case when nlevel(tR.path) > 1 THEN ltree2text(subpath(tR.path,-2,1)) else null end as parent, t.position "
 					+ " from taxonomy_definition as t, taxonomy_registry as tR"
 					+ " where t.id=tR.taxon_definition_id and t.is_deleted=false  and tR.classification_id=:classification_id and "
-					+ " tR.path ~ lquery(:parentCheck) " 
-					+ " order by nlevel(tR.path), t.name";
-			query = session.createNativeQuery(queryString);
+					+ " tR.path ~ lquery(:parentCheck) and nlevel(tR.path) > 1 " + " order by nlevel(tR.path), t.name";
+			query = session.createNativeQuery(queryString).setResultSetMapping("TaxonomyRelation");
 			query.setParameter("parentCheck", parentCheck);
 		}
 		query.setParameter("classification_id", CLASSIFICATION_ID);
@@ -186,28 +193,8 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 
 		return null;
 	}
-	
-	public List<TaxonomyRegistryResponse> getPathToRoot(Long taxonId) {
-		Session session = sessionFactory.openSession();
-		try {
-			String sqlString = "select cast(td.id as varchar), td.rank, td.name from (select * from taxonomy_registry where path @> "
-					+ "(select path from taxonomy_registry where taxon_definition_id = :taxonId) and "
-					+ "classification_id=:classificationId) tr "
-					+ "left outer join taxonomy_definition td "
-					+ "on td.id = tr.taxon_definition_id";
-			Query query = session.createNativeQuery(sqlString);
-			query.setParameter("taxonId", taxonId);
-			query.setParameter("classificationId", CLASSIFICATION_ID);
-			return getResultList(query, TaxonomyRegistryResponse.class);
-		} catch (Exception e) {
-			logger.error(e.getMessage());
-		} finally {
-			session.close();
-		}
-		return null;
-	}
 
-	public List<String> getPathToRoot(List<Long> taxonIds) {
+	private List<String> getPathToRoot(List<Long> taxonIds) {
 		Session session = sessionFactory.openSession();
 		try {
 			String sqlString = "select cast(taxon_definition_id as varchar) from taxonomy_registry where path @> "
@@ -225,17 +212,17 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		return null;
 	}
 
-	public List<Object[]> getHierarchy(Long taxonId) {
+	public List<TaxonomyRegistryResponse> getPathToRoot(Long taxonId) {
 		Session session = sessionFactory.openSession();
 		try {
-			String sqlString = "select td.id, td.rank, td.canonical_form from " 
-					+ " (select tr2.id, tr2.taxon_definition_id from taxonomy_registry tr1, taxonomy_registry tr2 "
-					+ " where tr1.taxon_definition_id = :taxonId and tr1.classification_id=:classificationId and tr1.path <@ tr2.path) tr" 
-					+ " inner join taxonomy_definition td on tr.taxon_definition_id = td.id";
+			String sqlString = "select cast(td.id as varchar), td.rank, td.name, td.canonical_form from (select * from taxonomy_registry where path @> "
+					+ "(select path from taxonomy_registry where taxon_definition_id = :taxonId) and "
+					+ "classification_id=:classificationId) tr " + "left outer join taxonomy_definition td "
+					+ "on td.id = tr.taxon_definition_id";
 			Query query = session.createNativeQuery(sqlString);
 			query.setParameter("taxonId", taxonId);
 			query.setParameter("classificationId", CLASSIFICATION_ID);
-			return query.getResultList();
+			return getResultList(query, TaxonomyRegistryResponse.class);
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		} finally {
@@ -243,4 +230,5 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		}
 		return null;
 	}
+
 }
