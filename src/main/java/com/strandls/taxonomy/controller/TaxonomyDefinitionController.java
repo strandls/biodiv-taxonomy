@@ -3,7 +3,6 @@
  */
 package com.strandls.taxonomy.controller;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -300,8 +299,8 @@ public class TaxonomyDefinitionController {
 
 	@ValidateUser
 
-	@ApiOperation(value = "delete synonyms", notes = "Re-index the elastic for given taxon Ids", response = TaxonomyDefinition.class, responseContainer = "List")
-	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to delete the names", response = String.class) })
+	@ApiOperation(value = "Update the elastic index for taxon", notes = "Re-index the elastic for given taxon Ids", response = TaxonomyDefinition.class, responseContainer = "List")
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to reIndex the taxon Ids", response = String.class) })
 
 	public Response updateElastic(@Context HttpServletRequest request, @QueryParam("taxonIds") String taxonIdsString) {
 		try {
@@ -309,6 +308,30 @@ public class TaxonomyDefinitionController {
 				List<Long> taxonIds = Arrays.asList(taxonIdsString.split(",")).stream().map(x -> Long.parseLong(x))
 						.collect(Collectors.toList());
 				List<MapQueryResponse> mapQueryResponses = taxonomyESOperation.pushToElastic(taxonIds);
+				return Response.status(Status.OK).entity(mapQueryResponses).build();
+			} else
+				throw new WebApplicationException(
+						Response.status(Response.Status.UNAUTHORIZED).entity("Only admin can do the reindex").build());
+		} catch (Exception e) {
+			throw new WebApplicationException(
+					Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build());
+		}
+	}
+	
+	@PUT
+	@Path(ApiConstants.ELASTIC + ApiConstants.REINDEX)
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ValidateUser
+
+	@ApiOperation(value = "Update the elastic index for taxon", notes = "Re-index the complete elastic for all taxon Ids", response = TaxonomyDefinition.class, responseContainer = "List")
+	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to delete the names", response = String.class) })
+
+	public Response reIndexElastic(@Context HttpServletRequest request) {
+		try {
+			if (TaxonomyUtil.isAdmin(request)) {
+				List<MapQueryResponse> mapQueryResponses = taxonomyESOperation.reIndexElastic();
 				return Response.status(Status.OK).entity(mapQueryResponses).build();
 			} else
 				throw new WebApplicationException(
