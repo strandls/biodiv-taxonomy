@@ -31,5 +31,6 @@ public class ApiConstants {
 	public static final String REQUEST = "/request";
 	public static final String GRANT = "/grant";
 	public static final String ELASTIC = "/elastic";
+	public static final String REINDEX = "/reindex";
 
 }

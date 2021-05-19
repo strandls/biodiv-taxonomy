@@ -20,6 +20,7 @@ import com.strandls.esmodule.ApiException;
 import com.strandls.esmodule.controllers.EsServicesApi;
 import com.strandls.esmodule.pojo.MapQueryResponse;
 import com.strandls.taxonomy.TaxonomyConfig;
+import com.strandls.taxonomy.dao.TaxonomyDefinitionDao;
 import com.strandls.taxonomy.pojo.TaxonomyESDocument;
 
 public class TaxonomyESOperation {
@@ -34,6 +35,9 @@ public class TaxonomyESOperation {
 
 	@Inject
 	private EsServicesApi esServicesApi;
+	
+	@Inject
+	private TaxonomyDefinitionDao taxonomyDefinitionDao;
 
 	private static final String ES_TAXONOMY_INDEX = "es.taxonomy.index";
 	private static final String ES_TAXONOMY_TYPE = "es.taxonomy.type";
@@ -76,8 +80,10 @@ public class TaxonomyESOperation {
 		
 		// Execute for the last batch of taxonIds
 		List<Long> batch = taxonIds.subList(numBatches*BATCH_SIZE, size);
-		ESThread esThread = new ESThread(this, batch);
-		executor.execute(esThread);
+		if(!batch.isEmpty()) {
+			ESThread esThread = new ESThread(this, batch);
+			executor.execute(esThread);
+		}
 		
 		executor.shutdown();
 		
@@ -129,6 +135,24 @@ public class TaxonomyESOperation {
 		}
 		
 		return new ArrayList<MapQueryResponse>();
+	}
+
+	public List<MapQueryResponse> reIndexElastic() {
+		Long rowCount = taxonomyDefinitionDao.getRowCount();
+		int limit = BATCH_SIZE * 50;
+		
+		int batches = rowCount.intValue()/limit;
+		for(int i = 0 ;i <= batches; i++) {
+			int offset = limit * i;
+			if(rowCount.intValue() < (offset + limit)) {
+				limit = rowCount.intValue() - offset;
+			}
+			List<Long> taxonIds = taxonomyDefinitionDao.getAllIds(limit, offset);
+			if(!taxonIds.isEmpty()) {
+				pushToElastic(taxonIds);
+			}
+		}
+		return esResult;
 	}
 
 }

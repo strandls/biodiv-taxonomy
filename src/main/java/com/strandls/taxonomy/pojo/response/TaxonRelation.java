@@ -7,13 +7,17 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 public class TaxonRelation {
 
+	private Long taxonid;
 	private Long id;
-	private String name;
+	private String text;
 	private String rank;
 	private String path;
 	private Long classification;
 	private Long parent;
 	private String position;
+
+	private Long speciesId;
+	private List<String> ids;
 
 	@JsonInclude(JsonInclude.Include.NON_EMPTY)
 	private List<TaxonRelation> children = new ArrayList<TaxonRelation>();
@@ -22,33 +26,45 @@ public class TaxonRelation {
 		super();
 	}
 
-	public TaxonRelation(Long id, String name, String rank, String path, Long classification, Long parent,
+	public TaxonRelation(Long id, String text, String rank, String path, Long classification, Long parent,
 			String position) {
 		super();
 		this.id = id;
-		this.name = name;
+		this.taxonid = id;
+		this.text = text;
 		this.rank = rank;
 		this.path = path;
 		this.classification = classification;
 		this.parent = parent;
 		this.position = position;
 	}
+	
+	public void addChild(TaxonRelation taxonRelation) {
+		this.children.add(taxonRelation);
+	}
 
-	public TaxonRelation(Long id, String name, String rank, String path, Long classification, Long parent,
-			String position, List<TaxonRelation> children) {
+	public TaxonRelation(Long taxonid, Long id, String text, String rank, String path, Long classification, Long parent,
+			String position, Long speciesId, List<String> ids, List<TaxonRelation> children) {
 		super();
+		this.taxonid = taxonid;
 		this.id = id;
-		this.name = name;
+		this.text = text;
 		this.rank = rank;
 		this.path = path;
 		this.classification = classification;
 		this.parent = parent;
 		this.position = position;
+		this.speciesId = speciesId;
+		this.ids = ids;
 		this.children = children;
 	}
 
-	public void addChild(TaxonRelation child) {
-		children.add(child);
+	public Long getTaxonid() {
+		return taxonid;
+	}
+
+	public void setTaxonid(Long taxonid) {
+		this.taxonid = taxonid;
 	}
 
 	public Long getId() {
@@ -59,12 +75,12 @@ public class TaxonRelation {
 		this.id = id;
 	}
 
-	public String getName() {
-		return name;
+	public String getText() {
+		return text;
 	}
 
-	public void setName(String name) {
-		this.name = name;
+	public void setText(String text) {
+		this.text = text;
 	}
 
 	public String getRank() {
@@ -107,6 +123,22 @@ public class TaxonRelation {
 		this.position = position;
 	}
 
+	public Long getSpeciesId() {
+		return speciesId;
+	}
+
+	public void setSpeciesId(Long speciesId) {
+		this.speciesId = speciesId;
+	}
+
+	public List<String> getIds() {
+		return ids;
+	}
+
+	public void setIds(List<String> ids) {
+		this.ids = ids;
+	}
+
 	public List<TaxonRelation> getChildren() {
 		return children;
 	}
@@ -114,4 +146,5 @@ public class TaxonRelation {
 	public void setChildren(List<TaxonRelation> children) {
 		this.children = children;
 	}
+
 }
