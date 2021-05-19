@@ -194,7 +194,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		return null;
 	}
 
-	private List<String> getPathToRoot(List<Long> taxonIds) {
+	public List<String> getPathToRoot(List<Long> taxonIds) {
 		Session session = sessionFactory.openSession();
 		try {
 			String sqlString = "select cast(taxon_definition_id as varchar) from taxonomy_registry where path @> "

@@ -81,13 +81,13 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 			for (String taxon : taxonIds.split(","))
 				taxonID.add(Long.parseLong(taxon));
 		}
-
+		List<String> ids = taxonomyRegistryDao.getPathToRoot(taxonID);
 		try {
 			List<TaxonRelation> inputItems = taxonomyRegistryDao.list(parent, taxonID, expandTaxon);
 
 			if (expandTaxon) {
 				if (taxonIds != null) {
-					List<TaxonRelation> outputItems = buildHierarchy(inputItems);
+					List<TaxonRelation> outputItems = buildHierarchy(inputItems, ids);
 					return outputItems;
 				}
 			}
@@ -101,12 +101,14 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 	/**
 	 * 
 	 * @param items dummy
+	 * @param ids 
 	 * @return dummy
 	 */
-	private List<TaxonRelation> buildHierarchy(List<TaxonRelation> items) {
+	private List<TaxonRelation> buildHierarchy(List<TaxonRelation> items, List<String> ids) {
 	
 		Map<Long, TaxonRelation> idItemMap = new HashMap<Long, TaxonRelation>();
 		for (TaxonRelation item : items) {
+			item.setIds(ids);
 			idItemMap.put(item.getId(), item);
 		}
 
