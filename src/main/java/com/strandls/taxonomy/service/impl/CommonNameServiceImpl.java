@@ -33,6 +33,9 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 
 	@Inject
 	private LogActivities logActivity;
+	
+	@Inject
+	private TaxonomyESOperation taxonomyESOperation;
 
 	@Inject
 	public CommonNameServiceImpl(CommonNameDao dao) {
@@ -153,7 +156,11 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 						"species", commonName.getId(), "Updated common name", null);
 
 			}
-			List<CommonName> result = fetchCommonNameWithLangByTaxonId(commonNamesData.getTaxonConceptId());
+			Long taxonId = commonNamesData.getTaxonConceptId();
+			List<CommonName> result = fetchCommonNameWithLangByTaxonId(taxonId);
+			List<Long> taxonIds = new ArrayList<Long>();
+			taxonIds.add(taxonId);
+			taxonomyESOperation.pushToElastic(taxonIds);
 			return result;
 
 		} catch (Exception e) {
@@ -173,6 +180,12 @@ public class CommonNameServiceImpl extends AbstractService<CommonName> implement
 			logActivity.LogActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId, "species",
 					commonName.getId(), "Deleted common name", null);
 			List<CommonName> result = fetchCommonNameWithLangByTaxonId(commonName.getTaxonConceptId());
+			
+			// Push to elastic 
+			List<Long> taxonIds = new ArrayList<Long>();
+			taxonIds.add(commonName.getTaxonConceptId());
+			taxonomyESOperation.pushToElastic(taxonIds);
+			
 			return result;
 		} catch (Exception e) {
 			logger.error(e.getMessage());
