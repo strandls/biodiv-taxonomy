@@ -187,7 +187,7 @@ public class TaxonomyDefinition {
 		this.uploaderId = uploaderId;
 	}
 
-	@Column(name = "status")
+	@Column(name = "status", nullable = false)
 	public String getStatus() {
 		return status;
 	}
@@ -196,7 +196,7 @@ public class TaxonomyDefinition {
 		this.status = status;
 	}
 
-	@Column(name = "position")
+	@Column(name = "position", nullable = false)
 	public String getPosition() {
 		return position;
 	}
@@ -243,6 +243,7 @@ public class TaxonomyDefinition {
 	}
 
 	@Column(name = "via_datasource")
+	@Type(type = "text")
 	public String getViaDatasource() {
 		return viaDatasource;
 	}
@@ -278,7 +279,7 @@ public class TaxonomyDefinition {
 		this.classs = classs;
 	}
 
-	@Column(name = "flagging_reason")
+	@Column(name = "flagging_reason", length = 1500)
 	public String getFlaggingReason() {
 		return flaggingReason;
 	}
@@ -296,7 +297,7 @@ public class TaxonomyDefinition {
 		this.isDeleted = isDeleted;
 	}
 
-	@Column(name = "dirty_list_reason")
+	@Column(name = "dirty_list_reason", length = 1000)
 	public String getDirtyListReason() {
 		return dirtyListReason;
 	}
@@ -305,8 +306,7 @@ public class TaxonomyDefinition {
 		this.dirtyListReason = dirtyListReason;
 	}
 
-	@Column(name = "activity_description")
-	@Type(type = "text")
+	@Column(name = "activity_description", length = 2000)
 	public String getActivityDescription() {
 		return activityDescription;
 	}

@@ -4,6 +4,7 @@
 package com.strandls.taxonomy.pojo;
 
 import java.io.Serializable;
+import java.sql.Timestamp;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -36,6 +37,8 @@ public class TaxonomyRegistry implements Serializable {
 	private String path;
 	private Long taxonomyDefinationId;
 	private String rank;
+	private Timestamp uploadTime;
+	private Long uploaderId;
 
 	@Id
 	//@GeneratedValue
@@ -85,5 +88,23 @@ public class TaxonomyRegistry implements Serializable {
 	
 	public void setRank(String rank) {
 		this.rank = rank;
+	}
+
+	@Column(name = "upload_time")
+	public Timestamp getUploadTime() {
+		return uploadTime;
+	}
+
+	public void setUploadTime(Timestamp uploadTime) {
+		this.uploadTime = uploadTime;
+	}
+
+	@Column(name = "uploader_id")
+	public Long getUploaderId() {
+		return uploaderId;
+	}
+
+	public void setUploaderId(Long uploaderId) {
+		this.uploaderId = uploaderId;
 	}
 }

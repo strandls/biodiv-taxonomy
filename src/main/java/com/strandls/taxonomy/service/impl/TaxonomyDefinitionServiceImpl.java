@@ -171,7 +171,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		Long taxonomyDefinitionId = taxonomyDefinition.getId();
 
 		path.append(taxonomyDefinitionId);
-		taxonomyRegistryDao.createRegistry(1L, path.toString(), "root", taxonomyDefinitionId);
+		taxonomyRegistryDao.createRegistry(1L, path.toString(), "root", taxonomyDefinitionId, null);
 
 		return taxonomyDefinition;
 	}
@@ -253,7 +253,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				Long taxonId = taxonomyDefinition.getId();
 				path.append(".");
 				path.append(taxonId);
-				taxonomyRegistryDao.createRegistry(1L, path.toString(), rankName, taxonId);
+				taxonomyRegistryDao.createRegistry(1L, path.toString(), rankName, taxonId, userId);
 			}
 		}
 
@@ -436,7 +436,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			Long taxonId = taxonomyDefinition.getId();
 			path.append(".");
 			path.append(taxonId);
-			taxonomyRegistryDao.createRegistry(1L, path.toString(), highestRankName, taxonId);
+			taxonomyRegistryDao.createRegistry(1L, path.toString(), highestRankName, taxonId, userId);
 		}
 
 		return createdHierarchy;
@@ -818,7 +818,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			// Update the tree and add to the registry
 			path.append(".");
 			path.append(taxonId);
-			taxonomyRegistryDao.createRegistry(1L, path.toString(), taxonomyDefinition.getRank(), taxonId);
+			taxonomyRegistryDao.createRegistry(1L, path.toString(), taxonomyDefinition.getRank(), taxonId, userId);
 
 			// Update the status
 			taxonomyDefinition.setStatus(TaxonomyStatus.ACCEPTED.name());

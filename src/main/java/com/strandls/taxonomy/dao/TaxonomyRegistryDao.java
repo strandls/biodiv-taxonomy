@@ -5,7 +5,9 @@ package com.strandls.taxonomy.dao;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
@@ -103,12 +105,17 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		return result;
 	}
 
-	public TaxonomyRegistry createRegistry(Long classificationId, String path, String rank, Long taxonDefinitionId) {
+	public TaxonomyRegistry createRegistry(Long classificationId, String path, String rank, Long taxonDefinitionId, Long uploaderId) {
+		Timestamp uploadTime = new Timestamp(new Date().getTime());
+		
 		TaxonomyRegistry registry = new TaxonomyRegistry();
 		registry.setClassificationId(classificationId);
 		registry.setPath(path.toString());
 		registry.setTaxonomyDefinationId(taxonDefinitionId);
 		registry.setRank(rank);
+		registry.setUploaderId(uploaderId);
+		registry.setUploadTime(uploadTime);
+		
 		return save(registry);
 	}
 
