@@ -18,6 +18,7 @@ import javax.ws.rs.core.Response.Status;
 
 import com.strandls.authentication_utility.filter.ValidateUser;
 import com.strandls.taxonomy.ApiConstants;
+import com.strandls.taxonomy.pojo.EncryptedKey;
 import com.strandls.taxonomy.pojo.PermissionData;
 import com.strandls.taxonomy.service.TaxonomyPermisisonService;
 
@@ -122,7 +123,7 @@ public class TaxonomyPermissionController {
 			@ApiResponse(code = 400, message = "uable to grant the permission", response = String.class) })
 
 	public Response grantPermissionrequest(@Context HttpServletRequest request,
-			@ApiParam(name = "encryptedKey") String encryptedKey) {
+			@ApiParam(name = "encryptedKey") EncryptedKey encryptedKey) {
 		try {
 			Boolean result = permissionService.verifyPermissionGrant(request, encryptedKey);
 			if (result)

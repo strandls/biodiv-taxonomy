@@ -19,6 +19,7 @@ import com.strandls.taxonomy.TreeRoles;
 import com.strandls.taxonomy.dao.SpeciesPermissionDao;
 import com.strandls.taxonomy.dao.SpeciesPermissionRequestDao;
 import com.strandls.taxonomy.dao.TaxonomyDefinitionDao;
+import com.strandls.taxonomy.pojo.EncryptedKey;
 import com.strandls.taxonomy.pojo.PermissionData;
 import com.strandls.taxonomy.pojo.SpeciesPermission;
 import com.strandls.taxonomy.pojo.SpeciesPermissionRequest;
@@ -172,13 +173,13 @@ public class TaxonomyPermissionServiceImpl implements TaxonomyPermisisonService 
 	}
 
 	@Override
-	public Boolean verifyPermissionGrant(HttpServletRequest request, String encryptedKey) {
+	public Boolean verifyPermissionGrant(HttpServletRequest request, EncryptedKey encryptedKey) {
 
 		try {
 			CommonProfile profile = AuthUtil.getProfileFromRequest(request);
 			JSONArray userRoles = (JSONArray) profile.getAttribute("roles");
 			if (userRoles.contains("ROLE_ADMIN")) {
-				String reqdata = encryptUtils.decrypt(encryptedKey);
+				String reqdata = encryptUtils.decrypt(encryptedKey.getToken());
 				SpeciesPermissionRequest permissionReq = om.readValue(reqdata, SpeciesPermissionRequest.class);
 				SpeciesPermissionRequest permissionReqOriginal = permissionReqDao.findById(permissionReq.getId());
 				if (permissionReqOriginal.equals(permissionReq)) {

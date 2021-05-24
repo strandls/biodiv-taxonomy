@@ -5,6 +5,7 @@ package com.strandls.taxonomy.service;
 
 import javax.servlet.http.HttpServletRequest;
 
+import com.strandls.taxonomy.pojo.EncryptedKey;
 import com.strandls.taxonomy.pojo.PermissionData;
 
 /**
@@ -20,5 +21,5 @@ public interface TaxonomyPermisisonService {
 
 	public Boolean requestPermission(HttpServletRequest request, PermissionData permissionData);
 
-	public Boolean verifyPermissionGrant(HttpServletRequest request, String encryptedKey);
+	public Boolean verifyPermissionGrant(HttpServletRequest request, EncryptedKey encryptedKey);
 }
