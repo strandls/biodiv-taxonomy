@@ -2,7 +2,6 @@ package com.strandls.taxonomy.util;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
@@ -67,7 +66,6 @@ public class EncryptionUtils {
 		String strData = "";
 
 		try {
-			encryptedText = URLDecoder.decode(encryptedText, StandardCharsets.UTF_8.toString());
 			SecretKeySpec skeyspec = new SecretKeySpec(key.getBytes("UTF-8"), "Blowfish");
 			Cipher cipher = Cipher.getInstance("Blowfish");
 			cipher.init(Cipher.DECRYPT_MODE, skeyspec);
