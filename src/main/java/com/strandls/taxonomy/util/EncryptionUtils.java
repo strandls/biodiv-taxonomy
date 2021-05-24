@@ -54,7 +54,9 @@ public class EncryptionUtils {
 			cipher.init(Cipher.ENCRYPT_MODE, skeyspec);
 			byte[] encrypted = cipher.doFinal(plainText.getBytes("UTF-8"));
 			strData = DatatypeConverter.printBase64Binary(encrypted);
-			strData = URLEncoder.encode(strData,StandardCharsets.UTF_8.toString());
+			strData = URLEncoder.encode(strData, StandardCharsets.UTF_8.toString());
+
+			System.out.println("Encrypted key : " + strData);
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
