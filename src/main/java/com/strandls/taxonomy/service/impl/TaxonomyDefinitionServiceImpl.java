@@ -411,7 +411,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		Map<String, TaxonomyDefinition> createdHierarchy;
 		// Found the match for the taxonomy
 		if (taxonomyDefinition != null) {
-			String taxonPath = taxonomyRegistryDao.findbyTaxonomyId(taxonomyDefinition.getId()).getPath();
+			String taxonPath = taxonomyRegistryDao.findbyTaxonomyId(taxonomyDefinition.getId(), null).getPath();
 			path.append(taxonPath);
 			return new LinkedHashMap<String, TaxonomyDefinition>();
 		} else {
@@ -851,8 +851,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			taxonIds.add(newTaxonId);
 
 			// Make relevant update to the database.
-			TaxonomyRegistry oldTaxonomyRegistry = taxonomyRegistryDao.findbyTaxonomyId(taxonId);
-			TaxonomyRegistry newTaxonomyRegistry = taxonomyRegistryDao.findbyTaxonomyId(newTaxonId);
+			TaxonomyRegistry oldTaxonomyRegistry = taxonomyRegistryDao.findbyTaxonomyId(taxonId, null);
+			TaxonomyRegistry newTaxonomyRegistry = taxonomyRegistryDao.findbyTaxonomyId(newTaxonId, null);
 			taxonomyDao.updateStatusToSynonymInDB(newTaxonomyRegistry, oldTaxonomyRegistry);
 
 			// Update the status for given taxon node.

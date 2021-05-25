@@ -70,11 +70,6 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		return entity;
 	}
 
-	@SuppressWarnings("unchecked")
-	public TaxonomyRegistry findbyTaxonomyId(Long taxonomyId) {
-		return findbyTaxonomyId(taxonomyId, CLASSIFICATION_ID);
-	}
-
 	public TaxonomyRegistry findbyTaxonomyId(Long taxonomyId, Long classificationId) {
 
 		classificationId = classificationId == null ? CLASSIFICATION_ID : classificationId;

@@ -37,11 +37,11 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 
 	@Override
 	public List<BreadCrumb> fetchByTaxonomyId(Long id) {
-		TaxonomyRegistry taxoRegistry = taxonomyRegistryDao.findbyTaxonomyId(id);
+		TaxonomyRegistry taxoRegistry = taxonomyRegistryDao.findbyTaxonomyId(id, null);
 		if (taxoRegistry == null) {
 			List<AcceptedSynonym> acceptedSynonyms = acceptedSynonymDao.findBySynonymId(id);
 			if (acceptedSynonyms != null && !acceptedSynonyms.isEmpty())
-				taxoRegistry = taxonomyRegistryDao.findbyTaxonomyId(acceptedSynonyms.get(0).getAcceptedId());
+				taxoRegistry = taxonomyRegistryDao.findbyTaxonomyId(acceptedSynonyms.get(0).getAcceptedId(), null);
 		}
 
 		String paths = taxoRegistry.getPath().replace(".", ",");
