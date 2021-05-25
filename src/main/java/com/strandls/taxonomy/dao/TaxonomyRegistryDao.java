@@ -72,15 +72,12 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 
 	@SuppressWarnings("unchecked")
 	public TaxonomyRegistry findbyTaxonomyId(Long taxonomyId) {
+		return findbyTaxonomyId(taxonomyId, CLASSIFICATION_ID);
+	}
 
-		InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream("config.properties");
-		Properties properties = new Properties();
-		try {
-			properties.load(in);
-		} catch (IOException e) {
-			logger.error(e.getMessage());
-		}
-		Long classificationId = Long.parseLong(properties.getProperty("classificationId"));
+	public TaxonomyRegistry findbyTaxonomyId(Long taxonomyId, Long classificationId) {
+
+		classificationId = classificationId == null ? CLASSIFICATION_ID : classificationId;
 
 		String qry = "from TaxonomyRegistry tr where tr.taxonomyDefinationId = :taxonomyId "
 				+ "and tr.classificationId = :classificationId";
@@ -94,11 +91,6 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		} finally {
-			try {
-				in.close();
-			} catch (IOException e) {
-				logger.error(e.getMessage());
-			}
 			session.close();
 		}
 
@@ -121,11 +113,11 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 	}
 
 	public List<String> findByTaxonIdOnTraitList(List<Long> traitTaxonIds, Set<String> speciesGroupTaxonIds) {
-		Long classificationId = CLASSIFICATION_ID;
-		return findByTaxonIdOnTraitList(traitTaxonIds, speciesGroupTaxonIds, classificationId);
+		return findByTaxonIdOnTraitList(traitTaxonIds, speciesGroupTaxonIds, CLASSIFICATION_ID);
 	}
 
-	public List<String> findByTaxonIdOnTraitList(List<Long> traitTaxonIds, Set<String> speciesGroupTaxonIds, Long classificationId) {
+	public List<String> findByTaxonIdOnTraitList(List<Long> traitTaxonIds, Set<String> speciesGroupTaxonIds,
+			Long classificationId) {
 
 		if (speciesGroupTaxonIds.isEmpty())
 			return new ArrayList<String>();
