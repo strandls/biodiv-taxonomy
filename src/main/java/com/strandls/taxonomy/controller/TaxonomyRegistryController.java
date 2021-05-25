@@ -105,7 +105,7 @@ public class TaxonomyRegistryController {
 			@QueryParam("taxonIds") String taxonIds,
 			@DefaultValue("false") @QueryParam("expand_taxon") Boolean expandTaxon) {
 		try {
-			List<TaxonRelation> result = taxonomyRegistry.list(parent, taxonIds, expandTaxon);
+			List<TaxonRelation> result = taxonomyRegistry.list(parent, taxonIds, expandTaxon, classificationId);
 			return Response.status(Status.OK).entity(result).build();
 
 		} catch (Exception e) {

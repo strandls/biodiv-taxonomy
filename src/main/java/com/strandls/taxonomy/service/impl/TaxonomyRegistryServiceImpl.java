@@ -72,7 +72,7 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 	}
 
 	@Override
-	public List<TaxonRelation> list(Long parent, String taxonIds, boolean expandTaxon) {
+	public List<TaxonRelation> list(Long parent, String taxonIds, boolean expandTaxon, Long classificationId) {
 		List<Long> taxonID;
 		if (taxonIds == null || "".equals(taxonIds.trim())) {
 			taxonID = null;
@@ -81,12 +81,12 @@ public class TaxonomyRegistryServiceImpl extends AbstractService<TaxonomyRegistr
 			for (String taxon : taxonIds.split(","))
 				taxonID.add(Long.parseLong(taxon));
 		}
-		List<String> ids = taxonomyRegistryDao.getPathToRoot(taxonID);
+		List<String> ids = taxonomyRegistryDao.getPathToRoot(taxonID, classificationId);
 		try {
-			List<TaxonRelation> inputItems = taxonomyRegistryDao.list(parent, taxonID, expandTaxon);
+			List<TaxonRelation> inputItems = taxonomyRegistryDao.list(parent, taxonID, expandTaxon, classificationId);
 
 			if (expandTaxon) {
-				if (taxonIds != null) {
+				if (taxonIds != null && inputItems != null) {
 					List<TaxonRelation> outputItems = buildHierarchy(inputItems, ids);
 					return outputItems;
 				}

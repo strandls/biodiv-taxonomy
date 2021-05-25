@@ -105,9 +105,10 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		return result;
 	}
 
-	public TaxonomyRegistry createRegistry(Long classificationId, String path, String rank, Long taxonDefinitionId, Long uploaderId) {
+	public TaxonomyRegistry createRegistry(Long classificationId, String path, String rank, Long taxonDefinitionId,
+			Long uploaderId) {
 		Timestamp uploadTime = new Timestamp(new Date().getTime());
-		
+
 		TaxonomyRegistry registry = new TaxonomyRegistry();
 		registry.setClassificationId(classificationId);
 		registry.setPath(path.toString());
@@ -115,25 +116,23 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		registry.setRank(rank);
 		registry.setUploaderId(uploaderId);
 		registry.setUploadTime(uploadTime);
-		
+
 		return save(registry);
 	}
 
 	public List<String> findByTaxonIdOnTraitList(List<Long> traitTaxonIds, Set<String> speciesGroupTaxonIds) {
+		Long classificationId = CLASSIFICATION_ID;
+		return findByTaxonIdOnTraitList(traitTaxonIds, speciesGroupTaxonIds, classificationId);
+	}
+
+	public List<String> findByTaxonIdOnTraitList(List<Long> traitTaxonIds, Set<String> speciesGroupTaxonIds, Long classificationId) {
 
 		if (speciesGroupTaxonIds.isEmpty())
 			return new ArrayList<String>();
 		String speciesGroupTaxons = String.join("|", speciesGroupTaxonIds);
 		speciesGroupTaxons = "*." + speciesGroupTaxons + ".*";
 
-		InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream("config.properties");
-		Properties properties = new Properties();
-		try {
-			properties.load(in);
-		} catch (IOException e) {
-			logger.error(e.getMessage());
-		}
-		Long classificationId = Long.parseLong(properties.getProperty("classificationId"));
+		classificationId = classificationId == null ? CLASSIFICATION_ID : classificationId;
 
 		String queryString = "select taxon_definition_id from taxonomy_registry t where t.classification_id = :classificationId and "
 				+ "t.path @> any(select tr.path from taxonomy_registry tr where tr.taxon_definition_id in (:traitTaxonIds) and tr.path ~ lquery(:speciesGroupTaxons))";
@@ -150,17 +149,12 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		} finally {
-			try {
-				in.close();
-			} catch (IOException e) {
-				logger.error(e.getMessage());
-			}
 			session.close();
 		}
 		return result;
 	}
 
-	public List<TaxonRelation> list(Long parent, List<Long> taxonIds, boolean expandTaxon) {
+	public List<TaxonRelation> list(Long parent, List<Long> taxonIds, boolean expandTaxon, Long classificationId) {
 		Session session = sessionFactory.openSession();
 		String queryString = "";
 		Query query;
@@ -174,11 +168,13 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		} else {
 			String parentCheck = " ";
 			if (expandTaxon && taxonIds != null && !taxonIds.isEmpty()) {
-				List<String> allTaxonIds = getPathToRoot(taxonIds);
+				List<String> allTaxonIds = getPathToRoot(taxonIds, classificationId);
 				parentCheck = String.join("|", allTaxonIds);
 				parentCheck = "*." + parentCheck + ".*{0,1}";
 			} else if (parent != null) {
 				parentCheck = "*." + parent + ".*{1}";
+			} else {
+				return new ArrayList<TaxonRelation>();
 			}
 			queryString = "select t.id, t.name, t.rank, ltree2text(tR.path) as path, tR.classification_id as classification, "
 					+ " case when nlevel(tR.path) > 1 THEN ltree2text(subpath(tR.path,-2,1)) else null end as parent, t.position "
@@ -188,7 +184,8 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 			query = session.createNativeQuery(queryString).setResultSetMapping("TaxonomyRelation");
 			query.setParameter("parentCheck", parentCheck);
 		}
-		query.setParameter("classification_id", CLASSIFICATION_ID);
+		classificationId = classificationId == null ? CLASSIFICATION_ID : classificationId;
+		query.setParameter("classification_id", classificationId);
 
 		try {
 			return query.getResultList();
@@ -201,7 +198,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		return null;
 	}
 
-	public List<String> getPathToRoot(List<Long> taxonIds) {
+	public List<String> getPathToRoot(List<Long> taxonIds, Long classificationId) {
 		Session session = sessionFactory.openSession();
 		try {
 			String sqlString = "select cast(taxon_definition_id as varchar) from taxonomy_registry where path @> "
@@ -209,7 +206,10 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 					+ "classification_id=:classificationId";
 			Query query = session.createNativeQuery(sqlString);
 			query.setParameter("taxonIds", taxonIds);
-			query.setParameter("classificationId", CLASSIFICATION_ID);
+
+			classificationId = classificationId == null ? CLASSIFICATION_ID : classificationId;
+
+			query.setParameter("classificationId", classificationId);
 			return (List<String>) query.getResultList();
 		} catch (Exception e) {
 			logger.error(e.getMessage());
@@ -219,7 +219,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		return null;
 	}
 
-	public List<TaxonomyRegistryResponse> getPathToRoot(Long taxonId) {
+	public List<TaxonomyRegistryResponse> getPathToRoot(Long taxonId, Long classificationId) {
 		Session session = sessionFactory.openSession();
 		try {
 			String sqlString = "select cast(td.id as varchar), td.rank, td.name, td.canonical_form from (select * from taxonomy_registry where path @> "
@@ -228,7 +228,8 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 					+ "on td.id = tr.taxon_definition_id";
 			Query query = session.createNativeQuery(sqlString);
 			query.setParameter("taxonId", taxonId);
-			query.setParameter("classificationId", CLASSIFICATION_ID);
+			classificationId = classificationId == null ? CLASSIFICATION_ID : classificationId;
+			query.setParameter("classificationId", classificationId);
 			return getResultList(query, TaxonomyRegistryResponse.class);
 		} catch (Exception e) {
 			logger.error(e.getMessage());

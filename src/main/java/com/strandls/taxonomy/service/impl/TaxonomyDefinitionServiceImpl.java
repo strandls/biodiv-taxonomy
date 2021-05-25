@@ -452,7 +452,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		TaxonomyDefinition matchedTaxonomy = null;
 		for (TaxonomyDefinition taxonomyDefinition : taxonomyDefinitions) {
 			
-			List<TaxonomyRegistryResponse> hierarchy = taxonomyRegistryDao.getPathToRoot(taxonomyDefinition.getId());
+			List<TaxonomyRegistryResponse> hierarchy = taxonomyRegistryDao.getPathToRoot(taxonomyDefinition.getId(), null);
 			int score = 0;
 
 			for(TaxonomyRegistryResponse r : hierarchy) {
@@ -705,7 +705,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					// List<TaxonomyRegistryResponse>>();
 					for (TaxonomyDefinition taxonomyDefinition : taxonomyDefinitions) {
 						List<TaxonomyRegistryResponse> taxonomyRegistry = taxonomyRegistryDao
-								.getPathToRoot(taxonomyDefinition.getId());
+								.getPathToRoot(taxonomyDefinition.getId(), null);
 						TaxonomyDefinitionAndRegistry taxonomyDefinitionAndRegistry = new TaxonomyDefinitionAndRegistry(
 								taxonomyDefinition, taxonomyRegistry);
 						parentMatched.add(taxonomyDefinitionAndRegistry);
@@ -717,7 +717,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			List<TaxonomyDefinitionAndRegistry> matched = new ArrayList<TaxonomyDefinitionAndRegistry>();
 			for (TaxonomyDefinition taxonomyDefinition : taxonomyDefinitions) {
 				List<TaxonomyRegistryResponse> taxonomyRegistry = taxonomyRegistryDao
-						.getPathToRoot(taxonomyDefinition.getId());
+						.getPathToRoot(taxonomyDefinition.getId(), null);
 				TaxonomyDefinitionAndRegistry taxonomyDefinitionAndRegistry = new TaxonomyDefinitionAndRegistry(
 						taxonomyDefinition, taxonomyRegistry);
 				matched.add(taxonomyDefinitionAndRegistry);
