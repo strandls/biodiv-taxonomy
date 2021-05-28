@@ -13,6 +13,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.transaction.Transactional;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -38,6 +39,7 @@ import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.pojo.request.FileMetadata;
 import com.strandls.taxonomy.pojo.request.TaxonomySave;
 import com.strandls.taxonomy.pojo.request.TaxonomyStatusUpdate;
+import com.strandls.taxonomy.pojo.response.TaxonomyNameListResponse;
 import com.strandls.taxonomy.pojo.response.TaxonomySearch;
 import com.strandls.taxonomy.service.TaxonomyDefinitionSerivce;
 import com.strandls.taxonomy.service.impl.TaxonomyESOperation;
@@ -81,6 +83,28 @@ public class TaxonomyDefinitionController {
 			return Response.status(Status.OK).entity(taxonomy).build();
 		} catch (Exception e) {
 			return Response.status(Status.BAD_REQUEST).build();
+		}
+	}
+
+	@GET
+	@Path("/namelist")
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.APPLICATION_JSON)
+
+	@ApiOperation(value = "Get taxonomy name list ", notes = "Returns taxonomy details", response = TaxonomyNameListResponse.class)
+	@ApiResponses(value = { @ApiResponse(code = 404, message = "Taxonomy list not found", response = String.class) })
+	public Response getTaxonomyNameList(@Context HttpServletRequest request, @QueryParam("taxonId") Long taxonId,
+			@QueryParam("classificationId") Long classificationId, @QueryParam("rankList") String rankList,
+			@QueryParam("statusList") String statusList, @QueryParam("positionList") String positionList,
+			@DefaultValue("-1") @QueryParam("limit") Integer limit,
+			@DefaultValue("-1") @QueryParam("offset") Integer offset) {
+		try {
+			TaxonomyNameListResponse response = taxonomyService.getTaxonomyNameList(taxonId, classificationId, rankList,
+					statusList, positionList, limit, offset);
+			return Response.ok().entity(response).build();
+		} catch (Exception e) {
+			throw new WebApplicationException(
+					Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
 		}
 	}
 
@@ -300,7 +324,8 @@ public class TaxonomyDefinitionController {
 	@ValidateUser
 
 	@ApiOperation(value = "Update the elastic index for taxon", notes = "Re-index the elastic for given taxon Ids", response = TaxonomyDefinition.class, responseContainer = "List")
-	@ApiResponses(value = { @ApiResponse(code = 400, message = "unable to reIndex the taxon Ids", response = String.class) })
+	@ApiResponses(value = {
+			@ApiResponse(code = 400, message = "unable to reIndex the taxon Ids", response = String.class) })
 
 	public Response updateElastic(@Context HttpServletRequest request, @QueryParam("taxonIds") String taxonIdsString) {
 		try {
@@ -317,7 +342,7 @@ public class TaxonomyDefinitionController {
 					Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build());
 		}
 	}
-	
+
 	@PUT
 	@Path(ApiConstants.ELASTIC + ApiConstants.REINDEX)
 	@Consumes(MediaType.TEXT_PLAIN)

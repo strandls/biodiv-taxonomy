@@ -3,6 +3,7 @@
  */
 package com.strandls.taxonomy.dao;
 
+import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
@@ -28,6 +29,8 @@ import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.pojo.TaxonomyRegistry;
 import com.strandls.taxonomy.pojo.enumtype.TaxonomyPosition;
 import com.strandls.taxonomy.pojo.enumtype.TaxonomyStatus;
+import com.strandls.taxonomy.pojo.response.TaxonomyNameListResponse;
+import com.strandls.taxonomy.pojo.response.TaxonomyNamelistItem;
 import com.strandls.taxonomy.service.exception.TaxonCreationException;
 import com.strandls.taxonomy.util.AbstractDAO;
 import com.strandls.taxonomy.util.TaxonomyUtil;
@@ -38,6 +41,10 @@ import com.strandls.utility.pojo.ParsedName;
  *
  */
 public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long> {
+
+	private static final String TAXONOMY_NAMELIST_QUERY = "taxonomyNamelist.sql";
+
+	private static final String TAXONOMY_NAMELIST_COUNT_QUERY = "taxonomyNamelistCount.sql";
 
 	private final Logger logger = LoggerFactory.getLogger(TaxonomyDefinitionDao.class);
 
@@ -270,5 +277,51 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 		taxonomyDefinition.setIsDeleted(false);
 		taxonomyDefinition = save(taxonomyDefinition);
 		return taxonomyDefinition;
+	}
+
+	@SuppressWarnings("unchecked")
+	public TaxonomyNameListResponse getTaxonomyNameList(Long taxonId, Long classificationId, List<String> rankList,
+			List<String> statusList, List<String> positionList, Integer limit, Integer offset) throws IOException {
+
+		String qryString = TaxonomyConfig.fetchFileAsString(TAXONOMY_NAMELIST_QUERY);
+		String countQueryString = TaxonomyConfig.fetchFileAsString(TAXONOMY_NAMELIST_COUNT_QUERY);
+		
+		Session session = sessionFactory.openSession();
+		
+		Query<Integer> countQuery = session.createNativeQuery(countQueryString).addScalar("count", StandardBasicTypes.INTEGER);
+		countQuery.setParameter("taxonId", taxonId);
+		countQuery.setParameter("classificationId", classificationId);
+		countQuery.setParameter("rank", rankList);
+		countQuery.setParameter("status", statusList);
+		countQuery.setParameter("position", positionList);
+		
+		Integer count = countQuery.getSingleResult();
+		
+		Query<TaxonomyNamelistItem> query = session.createNativeQuery(qryString)
+				.setResultSetMapping("TaxonomyNameList");
+		
+		classificationId = classificationId == null ? TaxonomyRegistryDao.getDefaultClassificationId()
+				: classificationId;
+
+		query.setParameter("taxonId", taxonId);
+		query.setParameter("classificationId", classificationId);
+		query.setParameter("rank", rankList);
+		query.setParameter("status", statusList);
+		query.setParameter("position", positionList);
+
+		if (limit != -1 && offset != -1) {
+			query.setMaxResults(limit);
+			query.setFirstResult(offset);
+		}
+
+		List<TaxonomyNamelistItem> taxonomyNamelistItems = query.getResultList();
+
+		TaxonomyNameListResponse response = new TaxonomyNameListResponse();
+		response.setCount(count);
+		response.setTaxonomyNameListItems(taxonomyNamelistItems);
+
+		session.close();
+
+		return response;
 	}
 }
