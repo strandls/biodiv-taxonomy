@@ -44,8 +44,6 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 
 	private static final String TAXONOMY_NAMELIST_QUERY = "taxonomyNamelist.sql";
 
-	private static final String TAXONOMY_NAMELIST_COUNT_QUERY = "taxonomyNamelistCount.sql";
-
 	private final Logger logger = LoggerFactory.getLogger(TaxonomyDefinitionDao.class);
 
 	/**
@@ -284,7 +282,7 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 			List<String> statusList, List<String> positionList, Integer limit, Integer offset) throws IOException {
 
 		String qryString = TaxonomyConfig.fetchFileAsString(TAXONOMY_NAMELIST_QUERY);
-		String countQueryString = TaxonomyConfig.fetchFileAsString(TAXONOMY_NAMELIST_COUNT_QUERY);
+		String countQueryString = "select count(*) from ( " +qryString + ") C";
 		
 		Session session = sessionFactory.openSession();
 		
