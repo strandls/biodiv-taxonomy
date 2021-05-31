@@ -47,6 +47,7 @@ import com.strandls.taxonomy.pojo.request.FileMetadata;
 import com.strandls.taxonomy.pojo.request.TaxonomySave;
 import com.strandls.taxonomy.pojo.request.TaxonomyStatusUpdate;
 import com.strandls.taxonomy.pojo.response.TaxonomyDefinitionAndRegistry;
+import com.strandls.taxonomy.pojo.response.TaxonomyNameListResponse;
 import com.strandls.taxonomy.pojo.response.TaxonomyRegistryResponse;
 import com.strandls.taxonomy.pojo.response.TaxonomySearch;
 import com.strandls.taxonomy.service.CommonNameSerivce;
@@ -92,7 +93,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 	@Inject
 	private ObjectMapper objectMapper;
-	
+
 	@Inject
 	private TaxonomyCache<String, ParsedName> taxonomyCache;
 
@@ -166,8 +167,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 	private TaxonomyDefinition createRoot(StringBuilder path) throws ApiException, TaxonCreationException {
 		ParsedName parsedName = utilityServiceApi.getNameParsed("Root");
-		TaxonomyDefinition taxonomyDefinition = taxonomyDao.createTaxonomyDefiniiton(parsedName, "root", TaxonomyStatus.ACCEPTED,
-				TaxonomyPosition.CLEAN, null, null, null);
+		TaxonomyDefinition taxonomyDefinition = taxonomyDao.createTaxonomyDefiniiton(parsedName, "root",
+				TaxonomyStatus.ACCEPTED, TaxonomyPosition.CLEAN, null, null, null);
 		Long taxonomyDefinitionId = taxonomyDefinition.getId();
 
 		path.append(taxonomyDefinitionId);
@@ -218,7 +219,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		TaxonomyStatus status = taxonomyData.getStatus();
 		TaxonomyPosition position = taxonomyData.getPosition();
 		List<Rank> ranks = taxonomyCache.getRanks();
-		
+
 		String source = taxonomyData.getSource();
 		String sourceId = taxonomyData.getSourceId();
 
@@ -244,8 +245,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 			// Name can be synonym as well, so kept the hierarchy creation and registry
 			// creation separate
-			taxonomyDefinition = taxonomyDao.createTaxonomyDefiniiton(parsedName, rankName, status, position, source, sourceId,
-					userId);
+			taxonomyDefinition = taxonomyDao.createTaxonomyDefiniiton(parsedName, rankName, status, position, source,
+					sourceId, userId);
 			taxonomyDefinitions.add(taxonomyDefinition);
 
 			// If the status is accepted add node to registry
@@ -296,6 +297,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 	/**
 	 * This is internally used by the addTaxonomyMethod
+	 * 
 	 * @param request
 	 * @param taxonId
 	 * @param synonymData
@@ -362,12 +364,14 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	 * @param userId       - userId
 	 * @param taxonomyData - taxonomy Data to push in the DB
 	 * @return
-	 * @throws ApiException           - If there is any micro-service down.
-	 * @throws TaxonCreationException - There is problem with hierarchy creation.
-	 * @throws UnRecongnizedRankException 
+	 * @throws ApiException               - If there is any micro-service down.
+	 * @throws TaxonCreationException     - There is problem with hierarchy
+	 *                                    creation.
+	 * @throws UnRecongnizedRankException
 	 */
 	private Map<String, TaxonomyDefinition> updateAndCreateHierarchyUtil(StringBuilder path, List<Rank> ranks,
-			Long userId, TaxonomySave taxonomyData) throws ApiException, TaxonCreationException, UnRecongnizedRankException {
+			Long userId, TaxonomySave taxonomyData)
+			throws ApiException, TaxonCreationException, UnRecongnizedRankException {
 
 		Map<String, String> rankToName = taxonomyData.getRankToName();
 		String source = taxonomyData.getSource();
@@ -428,8 +432,8 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					userId);
 
 			// Generate node here and go for the higher hierarchy
-			taxonomyDefinition = taxonomyDao.createTaxonomyDefiniiton(parsedName, highestRankName, TaxonomyStatus.ACCEPTED,
-					position, source, sourceId, userId);
+			taxonomyDefinition = taxonomyDao.createTaxonomyDefiniiton(parsedName, highestRankName,
+					TaxonomyStatus.ACCEPTED, position, source, sourceId, userId);
 			createdHierarchy.put(highestRankName, taxonomyDefinition);
 
 			// Add the created taxonomy to the registry.
@@ -451,18 +455,19 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		int maxScore = 0;
 		TaxonomyDefinition matchedTaxonomy = null;
 		for (TaxonomyDefinition taxonomyDefinition : taxonomyDefinitions) {
-			
-			List<TaxonomyRegistryResponse> hierarchy = taxonomyRegistryDao.getPathToRoot(taxonomyDefinition.getId(), null);
+
+			List<TaxonomyRegistryResponse> hierarchy = taxonomyRegistryDao.getPathToRoot(taxonomyDefinition.getId(),
+					null);
 			int score = 0;
 
-			for(TaxonomyRegistryResponse r : hierarchy) {
+			for (TaxonomyRegistryResponse r : hierarchy) {
 				String rank = r.getRank();
 				String name = r.getCanonicalForm();
 				ParsedName inputParsedName = rankToParsedName.get(rank);
 				if (inputParsedName.getCanonicalName().getFull().equalsIgnoreCase(name))
 					score++;
 			}
-			
+
 			if (maxScore < score) {
 				maxScore = score;
 				matchedTaxonomy = taxonomyDefinition;
@@ -493,7 +498,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	@Override
 	public Map<String, Object> uploadFile(HttpServletRequest request, FormDataMultiPart multiPart)
 			throws IOException, ApiException, InterruptedException, ExecutionException {
-		Map<String, Object>  result = new HashMap<String, Object>();
+		Map<String, Object> result = new HashMap<String, Object>();
 		Long startTime = System.currentTimeMillis();
 		FormDataBodyPart formdata = multiPart.getField("metadata");
 		if (formdata == null) {
@@ -538,7 +543,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		Long endTime = System.currentTimeMillis();
 		System.out.println("Total time : " + (endTime - startTime));
 		result.put("status", "success");
-		result.put("uploadTime (in ms) : ", (endTime-startTime));
+		result.put("uploadTime (in ms) : ", (endTime - startTime));
 		result.put("Cache hit : ", TaxonomyCache.getCacheHit());
 		result.put("Cache miss : ", TaxonomyCache.getCacheMiss());
 		return result;
@@ -594,8 +599,9 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			if (synonymData.getId() == null) {
 				if (synonymCheck == null) {
 
-					synonymTaxonomy = taxonomyDao.createTaxonomyDefiniiton(parsedName, synonymRank, TaxonomyStatus.SYNONYM,
-							TaxonomyPosition.RAW, synonymData.getDataSource(), synonymData.getDataSourceId(), userId);
+					synonymTaxonomy = taxonomyDao.createTaxonomyDefiniiton(parsedName, synonymRank,
+							TaxonomyStatus.SYNONYM, TaxonomyPosition.RAW, synonymData.getDataSource(),
+							synonymData.getDataSourceId(), userId);
 					synonymId = synonymTaxonomy.getId();
 					name = synonymTaxonomy.getName();
 				} else {
@@ -868,5 +874,37 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		}
 
 		return taxonomyDefinition;
+	}
+
+	@Override
+	public TaxonomyNameListResponse getTaxonomyNameList(Long taxonId, Long classificationId, String rankListString,
+			String statusListString, String positionListString, Integer limit, Integer offset) throws IOException {
+
+		// Verify the rank, add only lower case of it
+		List<String> rankList = new ArrayList<String>();
+		for(String rank : rankListString.split(","))
+			rankList.add(rank.toLowerCase().trim());
+		
+		// Verify and construct list of status
+		List<String> statusList = new ArrayList<String>();
+		for(String status : statusListString.split(",")) {
+			status = status.toUpperCase().trim();
+			status = TaxonomyStatus.fromValue(status).name();
+			statusList.add(status);
+		}
+		
+		// verify and construct list of position
+		List<String> positionList = new ArrayList<String>();
+		for (String position : positionListString.split(",")) {
+			position = position.toUpperCase().trim();
+			position = TaxonomyPosition.fromValue(position).name();
+			positionList.add(position);
+		}
+
+		// Get the result based on query
+		TaxonomyNameListResponse taxonomyNameListResponse = taxonomyDao.getTaxonomyNameList(taxonId, classificationId,
+				rankList, statusList, positionList, limit, offset);
+
+		return taxonomyNameListResponse;
 	}
 }

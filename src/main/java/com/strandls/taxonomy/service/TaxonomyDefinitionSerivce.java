@@ -17,6 +17,7 @@ import com.strandls.taxonomy.pojo.TaxonomicNames;
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.pojo.request.TaxonomySave;
 import com.strandls.taxonomy.pojo.request.TaxonomyStatusUpdate;
+import com.strandls.taxonomy.pojo.response.TaxonomyNameListResponse;
 import com.strandls.taxonomy.pojo.response.TaxonomySearch;
 import com.strandls.taxonomy.service.exception.TaxonCreationException;
 import com.strandls.utility.ApiException;
@@ -53,5 +54,8 @@ public interface TaxonomyDefinitionSerivce {
 	public TaxonomyDefinition updateName(Long taxonId, String taxonName) throws ApiException;
 
 	public TaxonomyDefinition updateStatus(HttpServletRequest request, TaxonomyStatusUpdate taxonomyStatusUpdate) throws ApiException, TaxonCreationException;
+
+	public TaxonomyNameListResponse getTaxonomyNameList(Long taxonId, Long classificationId, String rankList,
+			String statusList, String positionList, Integer limit, Integer offset) throws IOException;
 
 }

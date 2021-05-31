@@ -45,6 +45,10 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		}
 		CLASSIFICATION_ID = Long.parseLong(properties.getProperty("classificationId"));
 	}
+	
+	public static Long getDefaultClassificationId() {
+		return CLASSIFICATION_ID;
+	}
 
 	/**
 	 * @param sessionFactory

@@ -6,22 +6,35 @@ package com.strandls.taxonomy.pojo;
 import java.sql.Timestamp;
 
 import javax.persistence.Column;
+import javax.persistence.ColumnResult;
+import javax.persistence.ConstructorResult;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Index;
 import javax.persistence.SequenceGenerator;
+import javax.persistence.SqlResultSetMapping;
 import javax.persistence.Table;
 
 import org.hibernate.annotations.Type;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.strandls.taxonomy.pojo.response.TaxonomyNamelistItem;
 
 /**
  * @author Abhishek Rudra
  *
  */
+
+@SqlResultSetMapping(name = "TaxonomyNameList", classes = {
+		@ConstructorResult(targetClass = TaxonomyNamelistItem.class, columns = {
+				@ColumnResult(name = "id", type = Long.class), @ColumnResult(name = "name", type = String.class),
+				@ColumnResult(name = "rank", type = String.class), @ColumnResult(name = "status", type = String.class),
+				@ColumnResult(name = "position", type = String.class)
+				}) 
+		})
+
 @Entity
 @Table(name = "taxonomy_definition", indexes = {
 		@Index(name = "idx_canonical_form", columnList = "canonical_form, rank, is_deleted") })
@@ -59,11 +72,12 @@ public class TaxonomyDefinition {
 		super();
 	}
 
-	public TaxonomyDefinition(Long id, String binomialForm, String canonicalForm, String italicisedForm, Long externalLinksId, String name,
-			String normalizedForm, String rank, Timestamp uploadTime, Long uploaderId, String status, String position,
-			String authorYear, String matchDatabaseName, String matchId, String ibpSource, String viaDatasource,
-			Boolean isFlagged, String relationship, String classs, String flaggingReason, Boolean isDeleted,
-			String dirtyListReason, String activityDescription, String defaultHierarchy, String nameSourceId) {
+	public TaxonomyDefinition(Long id, String binomialForm, String canonicalForm, String italicisedForm,
+			Long externalLinksId, String name, String normalizedForm, String rank, Timestamp uploadTime,
+			Long uploaderId, String status, String position, String authorYear, String matchDatabaseName,
+			String matchId, String ibpSource, String viaDatasource, Boolean isFlagged, String relationship,
+			String classs, String flaggingReason, Boolean isDeleted, String dirtyListReason, String activityDescription,
+			String defaultHierarchy, String nameSourceId) {
 		super();
 		this.id = id;
 		this.binomialForm = binomialForm;
@@ -94,7 +108,7 @@ public class TaxonomyDefinition {
 	}
 
 	@Id
-	//@GeneratedValue
+	// @GeneratedValue
 	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "taxonomy_definition_id_generator")
 	@SequenceGenerator(name = "taxonomy_definition_id_generator", sequenceName = "taxonomy_definition_id_seq", allocationSize = 1)
 	@Column(name = "id")
@@ -123,12 +137,12 @@ public class TaxonomyDefinition {
 	public void setCanonicalForm(String canonicalForm) {
 		this.canonicalForm = canonicalForm;
 	}
-	
+
 	@Column(name = "italicised_form", nullable = false)
 	public String getItalicisedForm() {
 		return italicisedForm;
 	}
-	
+
 	public void setItalicisedForm(String italicisedForm) {
 		this.italicisedForm = italicisedForm;
 	}
