@@ -7,18 +7,20 @@ public class TaxonomyNamelistItem {
 	private String name;
 	private String status;
 	private String position;
+	private Double rankValue;
 
 	public TaxonomyNamelistItem() {
 		super();
 	}
 
-	public TaxonomyNamelistItem(Long id, String rank, String name, String status, String position) {
+	public TaxonomyNamelistItem(Long id, String rank, String name, String status, String position, Double rankValue) {
 		super();
 		this.id = id;
 		this.rank = rank;
 		this.name = name;
 		this.status = status;
 		this.position = position;
+		this.rankValue = rankValue;
 	}
 
 	public Long getId() {
@@ -61,5 +63,12 @@ public class TaxonomyNamelistItem {
 		this.position = position;
 	}
 
+	public Double getRankValue() {
+		return rankValue;
+	}
+
+	public void setRankValue(Double rankValue) {
+		this.rankValue = rankValue;
+	}
 
 }

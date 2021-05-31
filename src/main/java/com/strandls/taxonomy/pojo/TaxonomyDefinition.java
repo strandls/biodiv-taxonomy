@@ -31,7 +31,7 @@ import com.strandls.taxonomy.pojo.response.TaxonomyNamelistItem;
 		@ConstructorResult(targetClass = TaxonomyNamelistItem.class, columns = {
 				@ColumnResult(name = "id", type = Long.class), @ColumnResult(name = "name", type = String.class),
 				@ColumnResult(name = "rank", type = String.class), @ColumnResult(name = "status", type = String.class),
-				@ColumnResult(name = "position", type = String.class)
+				@ColumnResult(name = "position", type = String.class), @ColumnResult(name = "rankvalue", type = Double.class)
 				}) 
 		})
 
