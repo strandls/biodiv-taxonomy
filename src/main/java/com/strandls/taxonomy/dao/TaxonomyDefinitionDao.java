@@ -68,16 +68,6 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 		return entity;
 	}
 
-	public Long getRowCount() {
-		Session session = sessionFactory.openSession();
-		CriteriaBuilder criteriaBuilder = session.getCriteriaBuilder();
-		CriteriaQuery<Long> criteria = criteriaBuilder.createQuery(Long.class);
-		CriteriaQuery<Long> count = criteria.select(criteriaBuilder.count(criteria.from(TaxonomyDefinition.class)));
-		Long rowCount = session.createQuery(count).getSingleResult();
-		session.close();
-		return rowCount;
-	}
-
 	public List<Long> getAllIds(int limit, int offset) {
 		Session session = sessionFactory.openSession();
 		CriteriaBuilder criteriaBuilder = session.getCriteriaBuilder();

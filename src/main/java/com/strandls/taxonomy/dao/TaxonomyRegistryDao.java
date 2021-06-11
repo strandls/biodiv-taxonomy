@@ -100,6 +100,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 			Long uploaderId) {
 		Timestamp uploadTime = new Timestamp(new Date().getTime());
 
+		classificationId = classificationId == null ? getDefaultClassificationId() : classificationId;
 		TaxonomyRegistry registry = new TaxonomyRegistry();
 		registry.setClassificationId(classificationId);
 		registry.setPath(path.toString());
@@ -216,11 +217,78 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 			String sqlString = "select cast(td.id as varchar), td.rank, td.name, td.canonical_form from (select * from taxonomy_registry where path @> "
 					+ "(select path from taxonomy_registry where taxon_definition_id = :taxonId) and "
 					+ "classification_id=:classificationId) tr " + "left outer join taxonomy_definition td "
-					+ "on td.id = tr.taxon_definition_id";
+					+ "on td.id = tr.taxon_definition_id order by tr.path";
 			Query query = session.createNativeQuery(sqlString);
 			query.setParameter("taxonId", taxonId);
 			classificationId = classificationId == null ? CLASSIFICATION_ID : classificationId;
 			query.setParameter("classificationId", classificationId);
+			return getResultList(query, TaxonomyRegistryResponse.class);
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return null;
+	}
+	
+	/**
+	 * Code below this point is only for the migration purpose.
+	 * @param taxonId
+	 * @param classificationIds
+	 * @return
+	 */
+
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public List<TaxonomyRegistry> getOldHierarchy(Long taxonId, List<Long> classificationIds) {
+		Session session = sessionFactory.openSession();
+		try {
+			String sqlString = "select id, classification_id, ltree2text(path) path, rank, taxon_definition_id, upload_time, uploader_id from taxonomy_registry_backup "
+					+ " where taxon_definition_id = :taxonId"
+					+ " and classification_id in (:classificationIds) order by classification_id desc";
+			Query query = session.createNativeQuery(sqlString, TaxonomyRegistry.class);
+			query.setParameter("taxonId", taxonId);
+			query.setParameter("classificationIds", classificationIds);
+			return query.getResultList();
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+			return null;
+		} finally {
+			session.close();
+		}
+	}
+	
+	public List<TaxonomyRegistryResponse> getPathToRootForOldHierarchy(Long taxonId, Long classificationId) {
+		Session session = sessionFactory.openSession();
+		try {
+			String sqlString = "select cast(td.id as varchar), td.rank, td.name, td.canonical_form from (select * from taxonomy_registry_backup where path @> "
+					+ "(select path from taxonomy_registry_backup where taxon_definition_id = :taxonId and "
+					+ "classification_id=:classificationId) and classification_id=:classificationId) tr " + "left outer join taxonomy_definition td "
+					+ "on td.id = tr.taxon_definition_id order by tr.path";
+			Query query = session.createNativeQuery(sqlString);
+			query.setParameter("taxonId", taxonId);
+			classificationId = classificationId == null ? CLASSIFICATION_ID : classificationId;
+			query.setParameter("classificationId", classificationId);
+			return getResultList(query, TaxonomyRegistryResponse.class);
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		} finally {
+			session.close();
+		}
+		return null;
+	}
+	
+	public List<TaxonomyRegistryResponse> getNameFromPath(String path) {
+		Session session = sessionFactory.openSession();
+		try {
+			List<Long> taxonIds = new ArrayList<Long>();
+			for(String s : path.split("\\."))
+				taxonIds.add(Long.parseLong(s));
+			
+			String sqlString = "select cast(td.id as varchar), td.rank, td.name, td.canonical_form from taxonomy_definition td "
+					+ " left join taxonomy_rank r on td.rank = r.name "
+					+ " where td.id in (:taxonIds) order by r.rankvalue";
+			Query<String> query = session.createNativeQuery(sqlString);
+			query.setParameterList("taxonIds", taxonIds);
 			return getResultList(query, TaxonomyRegistryResponse.class);
 		} catch (Exception e) {
 			logger.error(e.getMessage());

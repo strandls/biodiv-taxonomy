@@ -95,6 +95,11 @@ abstract class Cache<K, V> {
 		if (hashTable.containsKey(k)) {
 			TaxonomyCache.increamentCacheHit();
 			node = hashTable.get(k);
+			if(node.getValue() == null) {
+				doublyLinkedList.remove(node);
+				hashTable.remove(node);
+				return getValue(k);
+			}
 			doublyLinkedList.remove(node);
 			doublyLinkedList.addLast(node);
 		} else {

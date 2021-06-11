@@ -1,19 +1,26 @@
 package com.strandls.taxonomy.util;
 
+import static org.hibernate.type.StandardBasicTypes.LONG;
+
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import javax.persistence.NoResultException;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
 
 import org.hibernate.Criteria;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
+
+import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 
 public abstract class AbstractDAO<T, K extends Serializable> {
 
@@ -78,6 +85,66 @@ public abstract class AbstractDAO<T, K extends Serializable> {
 		return entity;
 	}
 
+	/**
+	 * Get complete count the given entity
+	 * 
+	 * @return
+	 */
+
+	public Long getRowCount() {
+		Session session = sessionFactory.openSession();
+		CriteriaBuilder criteriaBuilder = session.getCriteriaBuilder();
+		CriteriaQuery<Long> criteria = criteriaBuilder.createQuery(Long.class);
+		CriteriaQuery<Long> count = criteria.select(criteriaBuilder.count(criteria.from(daoType)));
+		Long rowCount = session.createQuery(count).getSingleResult();
+		session.close();
+		return rowCount;
+	}
+
+	/**
+	 * Get count for the native query
+	 * 
+	 * @param queryString
+	 * @param parameters
+	 * @return
+	 */
+	public Long getRowCount(String qryString, Map<String, Object> parameters) {
+		Session session = sessionFactory.openSession();
+		String queryString = "select count(*) from ( " + qryString + ") C";
+		Query<Long> countQuery = session.createNativeQuery(queryString).addScalar("count", LONG);
+
+		for (Map.Entry<String, Object> e : parameters.entrySet()) {
+			countQuery.setParameter(e.getKey(), e.getValue());
+		}
+
+		Long count = countQuery.getSingleResult();
+		session.close();
+		return count;
+	}
+
+	/**
+	 * Get count for the native query
+	 * 
+	 * @param queryString
+	 * @param parameters
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public List<T> getByQueryString(String queryString, Map<String, Object> parameters, int limit, int offset) {
+		Session session = sessionFactory.openSession();
+		Query<T> query = session.createQuery(queryString);
+
+		for (Map.Entry<String, Object> e : parameters.entrySet()) {
+			query.setParameter(e.getKey(), e.getValue());
+		}
+
+		query.setMaxResults(limit).setFirstResult(offset);
+		
+		List<T> result = query.getResultList();
+		session.close();
+		return result;
+	}
+
 	public abstract T findById(K id);
 
 	@SuppressWarnings({ "unchecked", "deprecation" })
@@ -85,6 +152,7 @@ public abstract class AbstractDAO<T, K extends Serializable> {
 		Session session = sessionFactory.openSession();
 		Criteria criteria = session.createCriteria(daoType);
 		List<T> entities = criteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY).list();
+		session.close();
 		return entities;
 	}
 
@@ -93,6 +161,7 @@ public abstract class AbstractDAO<T, K extends Serializable> {
 		Session session = sessionFactory.openSession();
 		Criteria criteria = session.createCriteria(daoType).setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
 		List<T> entities = criteria.setFirstResult(offset).setMaxResults(limit).list();
+		session.close();
 		return entities;
 	}
 
