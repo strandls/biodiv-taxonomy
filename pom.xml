@@ -26,6 +26,11 @@
 		<srcDir>src/main/webapp</srcDir>
 		<base-path>/taxonomy-api/api</base-path>
 		<location>com.strandls.taxonomy</location>
+
+		<!-- Sonar Cloud -->
+		<sonar.projectKey>strandls_biodiv-taxonomy</sonar.projectKey>
+		<sonar.organization>strandls</sonar.organization>
+		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
 	</properties>
 
 	<distributionManagement>
