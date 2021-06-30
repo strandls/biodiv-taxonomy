@@ -164,6 +164,12 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 		return createdTaxonomy;
 	}
+	
+	public TaxonomyDefinition createNotAssignedName(String rank, TaxonomyPosition position, Long userId)
+			throws UnRecongnizedRankException, ApiException, TaxonCreationException {
+		ParsedName parsedName = taxonomyCache.getName(rank, "Not assigned");
+		return taxonomyDao.createTaxonomyDefiniiton(parsedName, rank, TaxonomyStatus.ACCEPTED, position, "", "", userId);
+	}
 
 	private TaxonomyDefinition createRoot(StringBuilder path) throws ApiException, TaxonCreationException {
 		ParsedName parsedName = utilityServiceApi.getNameParsed("Root");
@@ -172,7 +178,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		Long taxonomyDefinitionId = taxonomyDefinition.getId();
 
 		path.append(taxonomyDefinitionId);
-		taxonomyRegistryDao.createRegistry(null, path.toString(), "root", taxonomyDefinitionId, null);
+		taxonomyRegistryDao.createRegistry(null, path.toString(), "root", taxonomyDefinitionId, null, null);
 
 		return taxonomyDefinition;
 	}
@@ -254,7 +260,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				Long taxonId = taxonomyDefinition.getId();
 				path.append(".");
 				path.append(taxonId);
-				taxonomyRegistryDao.createRegistry(null, path.toString(), rankName, taxonId, userId);
+				taxonomyRegistryDao.createRegistry(null, path.toString(), rankName, taxonId, userId, null);
 			}
 		}
 
@@ -440,7 +446,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			Long taxonId = taxonomyDefinition.getId();
 			path.append(".");
 			path.append(taxonId);
-			taxonomyRegistryDao.createRegistry(null, path.toString(), highestRankName, taxonId, userId);
+			taxonomyRegistryDao.createRegistry(null, path.toString(), highestRankName, taxonId, userId, null);
 		}
 
 		return createdHierarchy;
@@ -824,7 +830,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			// Update the tree and add to the registry
 			path.append(".");
 			path.append(taxonId);
-			taxonomyRegistryDao.createRegistry(null, path.toString(), taxonomyDefinition.getRank(), taxonId, userId);
+			taxonomyRegistryDao.createRegistry(null, path.toString(), taxonomyDefinition.getRank(), taxonId, userId, null);
 
 			// Update the status
 			taxonomyDefinition.setStatus(TaxonomyStatus.ACCEPTED.name());

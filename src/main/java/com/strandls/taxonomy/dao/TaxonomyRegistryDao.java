@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Properties;
@@ -21,6 +22,7 @@ import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.pojo.TaxonomyRegistry;
 import com.strandls.taxonomy.pojo.response.TaxonRelation;
 import com.strandls.taxonomy.pojo.response.TaxonomyRegistryResponse;
@@ -97,13 +99,13 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 	}
 
 	public TaxonomyRegistry createRegistry(Long classificationId, String path, String rank, Long taxonDefinitionId,
-			Long uploaderId) {
-		Timestamp uploadTime = new Timestamp(new Date().getTime());
+			Long uploaderId, Timestamp uploadTime) {
+		uploadTime = uploadTime == null ? new Timestamp(new Date().getTime()) : uploadTime;
 
 		classificationId = classificationId == null ? getDefaultClassificationId() : classificationId;
 		TaxonomyRegistry registry = new TaxonomyRegistry();
 		registry.setClassificationId(classificationId);
-		registry.setPath(path.toString());
+		registry.setPath(path);
 		registry.setTaxonomyDefinationId(taxonDefinitionId);
 		registry.setRank(rank);
 		registry.setUploaderId(uploaderId);
@@ -296,6 +298,120 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 			session.close();
 		}
 		return null;
+	}
+
+	/**
+	 * 
+	 * Order for choosing candidate is as follow
+	 * 821 - Catalog of Life
+	 * 820 - FishBase Taxonomy Hierarchy
+	 * 819 - IUCN Taxonomy Hierarchy (2010)
+	 * 818 - GBIF Taxonomy Hierarchy
+	 * 817 - Author Contributed Taxonomy Hierarchy
+	 * 265798 - Combined Taxonomy Hierarchy
+	 * 
+	 * If we found any duplicate candidate the we fall back to IBP hierarchy. so we are maintaining both the record
+	 * Pulling out one of the hierarchy mentioned above in given order and IBP hierarchy
+	 * 
+	 * 265799 - IBP hierarchy
+	 * 
+	 * Query to execute is as follow
+	 * 
+	 * select * from taxonomy_registry_backup
+	 * where taxon_definition_id = :taxonId and (classification_id = :classificationId or classification_id = (
+	 * 		select classification_id from taxonomy_registry_backup
+	 * 		where taxon_definition_id = :taxonId
+	 * 		group by classification_id
+	 * 		order by case classification_id
+	 * 			when 821 then 1 
+	 * 			when 820 then 2	
+	 * 			when 819 then 3
+	 * 			when 818 then 4	
+	 * 			when 817 then 5
+	 * 			when 265798 then 6
+	 * 			end limit 1
+	 * )) order by classification_id desc
+	 * @param taxonId
+	 * @return
+	 */
+	public List<TaxonomyRegistry> getSnappingCandidates(Long taxonId) {
+		Session session = sessionFactory.openSession();
+		Long classificationId = getDefaultClassificationId();
+		try {
+			String sqlString = "select * from taxonomy_registry_backup "
+					+ " where taxon_definition_id =:taxonId and (classification_id =:classificationId or classification_id = ( "
+					+ " select classification_id from taxonomy_registry_backup "
+					+ " where taxon_definition_id = :taxonId "
+					+ " group by classification_id "
+					+ " order by case classification_id "
+						+ " when 821 then 1"
+						+ "	when 820 then 2"
+						+ "	when 819 then 3"
+						+ "	when 818 then 4"
+						+ "	when 817 then 5"
+						+ "	when 265798 then 6"
+						+ " else 7 end limit 1"
+					+ ")) order by classification_id desc";
+			Query query = session.createNativeQuery(sqlString, TaxonomyRegistry.class);
+			query.setParameter("taxonId", taxonId);
+			query.setParameter("classificationId", classificationId);
+			return query.getResultList();
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+			return new ArrayList<TaxonomyRegistry>();
+		} finally {
+			session.close();
+		}
+	}
+
+	public TaxonomyRegistry getParentToSnapOn(String path) {
+		Session session = sessionFactory.openSession();
+		Long classificationId = getDefaultClassificationId();
+		try {
+			List<String> paths = Arrays.asList(path.split("\\."));
+			String parentCheck = String.join("|", paths);
+			parentCheck = "*." + parentCheck;
+			
+			String sqlString = "select * from taxonomy_registry tr "
+					+ " left join taxonomy_rank r on tr.rank = r.name "
+					+ " where tr.path ~ lquery(:parentCheck) and tr.classification_id = :classificationId "
+					+ " order by r.rankvalue desc, nlevel(path) desc";
+			Query query = session.createNativeQuery(sqlString, TaxonomyRegistry.class).setMaxResults(1);
+			query.setParameter("parentCheck", parentCheck);
+			query.setParameter("classificationId", classificationId);
+			return (TaxonomyRegistry) query.getSingleResult();
+		} catch (Exception e) {
+			return null;
+		} finally {
+			session.close();
+		}
+	}
+
+	public TaxonomyDefinition findChildWithNotAssigned(Long parentId, Long classificationId) {
+		Session session = sessionFactory.openSession();
+		classificationId = classificationId == null ? CLASSIFICATION_ID : classificationId;
+		try {
+
+			String parentCheck = "*." + parentId + ".*{1}";
+			
+			String sqlString = "select td.* "
+					+ "from (select * from taxonomy_registry where path ~ lquery(:parentCheck) and classification_id = :classificationId) tr "
+					+ "left join (select * from taxonomy_definition where name like 'Not assigned') td "
+					+ "on td.id = tr.taxon_definition_id "
+					+ "where td.id is not null";
+			Query<TaxonomyDefinition> query = session.createNativeQuery(sqlString, TaxonomyDefinition.class).setMaxResults(1);
+			query.setParameter("parentCheck", parentCheck);
+			query.setParameter("classificationId", classificationId);
+			List<TaxonomyDefinition> taxonList = query.getResultList();
+			if(taxonList.isEmpty())
+				return null;
+			else
+				return taxonList.get(0);
+		} catch (Exception e) {
+			return null;
+		} finally {
+			session.close();
+		}
 	}
 
 }

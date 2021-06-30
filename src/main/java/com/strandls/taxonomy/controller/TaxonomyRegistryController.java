@@ -118,7 +118,7 @@ public class TaxonomyRegistryController {
 	}
 	
 	@POST
-	@Path("/migrate")
+	@Path("/migrate/clean")
 	@Produces(MediaType.APPLICATION_JSON)
 	
 	@ValidateUser
@@ -126,13 +126,61 @@ public class TaxonomyRegistryController {
 	@ApiOperation(value = "Migrate the taxonomy hierarchy", notes = "Migrate hierarchy with following order first take", response = String.class)
 	@ApiResponses(value = {
 			@ApiResponse(code = 400, message = "unable to do migration", response = String.class) })
-	public Response migrate(@Context HttpServletRequest request) {
+	public Response migrateCleanName(@Context HttpServletRequest request) {
 		try {
 			if(!TaxonomyUtil.isAdmin(request))
 				throw new WebApplicationException(
 						Response.status(Response.Status.UNAUTHORIZED).entity("Only admin can do migration").build());
 			
-			Map<String, Object> result = taxonomyRegistry.migrate();
+			Map<String, Object> result = taxonomyRegistry.migrateCleanName();
+			return Response.status(Status.OK).entity(result).build();
+
+		} catch (Exception e) {
+			throw new WebApplicationException(
+					Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
+		}
+	}
+	
+	@POST
+	@Path("/migrate/working")
+	@Produces(MediaType.APPLICATION_JSON)
+	
+	@ValidateUser
+
+	@ApiOperation(value = "Migrate the taxonomy hierarchy for working name", notes = "Migrate hierarchy for working name", response = String.class)
+	@ApiResponses(value = {
+			@ApiResponse(code = 400, message = "unable to do migration", response = String.class) })
+	public Response migrateWorkingName(@Context HttpServletRequest request) {
+		try {
+			if(!TaxonomyUtil.isAdmin(request))
+				throw new WebApplicationException(
+						Response.status(Response.Status.UNAUTHORIZED).entity("Only admin can do migration").build());
+			
+			Map<String, Object> result = taxonomyRegistry.snapWorkingNames();
+			return Response.status(Status.OK).entity(result).build();
+
+		} catch (Exception e) {
+			throw new WebApplicationException(
+					Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
+		}
+	}
+	
+	@POST
+	@Path("/migrate/raw")
+	@Produces(MediaType.APPLICATION_JSON)
+	
+	@ValidateUser
+
+	@ApiOperation(value = "Migrate the taxonomy hierarchy for raw name", notes = "Migrate hierarchy for raw name", response = String.class)
+	@ApiResponses(value = {
+			@ApiResponse(code = 400, message = "unable to do migration", response = String.class) })
+	public Response migrateRawName(@Context HttpServletRequest request) {
+		try {
+			if(!TaxonomyUtil.isAdmin(request))
+				throw new WebApplicationException(
+						Response.status(Response.Status.UNAUTHORIZED).entity("Only admin can do migration").build());
+			
+			Map<String, Object> result = taxonomyRegistry.snapRawNames();
 			return Response.status(Status.OK).entity(result).build();
 
 		} catch (Exception e) {
