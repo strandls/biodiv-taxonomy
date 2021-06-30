@@ -4,6 +4,7 @@
 package com.strandls.taxonomy.service.impl;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -50,8 +51,7 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 
 	@Override
 	public TaxonomyDefinition fetchById(Long id) {
-		TaxonomyDefinition taxonomy = taxonomyDao.findById(id);
-		return taxonomy;
+		return taxonomyDao.findById(id);
 	}
 
 	@Override
@@ -83,16 +83,12 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 		List<String> allTaxonomyList = new ArrayList<String>();
 		for (String taxonId : taxonList) {
 			TaxonomyRegistry taxoRegistry = taxonomyRegistryDao.findbyTaxonomyId(Long.parseLong(taxonId));
-			String path[] = taxoRegistry.getPath().split("_");
+			String[] path = taxoRegistry.getPath().split("_");
 			for (int i = 0; i < path.length; i++) {
 				for (SpeciesGroupMapping speciesGroup : traitList) {
 					if (speciesGroup.getTaxonConceptId() != null
 							&& speciesGroup.getTaxonConceptId().toString().equals(path[i])) {
-						i = 0;
-						while (i < path.length) {
-							allTaxonomyList.add(path[i]);
-							i++;
-						}
+						allTaxonomyList.addAll(Arrays.asList(path));
 						break;
 					}
 				}
@@ -103,8 +99,7 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 
 	@Override
 	public List<SpeciesGroup> findAllSpecies() {
-		List<SpeciesGroup> result = speciesGroupDao.findAllOrdered();
-		return result;
+		return speciesGroupDao.findAllOrdered();
 	}
 
 	@Override
@@ -125,8 +120,7 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 
 	@Override
 	public List<SpeciesPermission> getSpeciesPermissions(Long userId) {
-		List<SpeciesPermission> allowedTaxonList = speciesPermissionDao.findByUserId(userId);
-		return allowedTaxonList;
+		return speciesPermissionDao.findByUserId(userId);
 	}
 
 }
