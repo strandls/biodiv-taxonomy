@@ -52,7 +52,7 @@ public class SpeciesPermissionDao extends AbstractDAO<SpeciesPermission, Long> {
 
 		String qry = "from SpeciesPermission where authorId = :userId";
 		Session session = sessionFactory.openSession();
-		List<SpeciesPermission> allowedTaxonList = new ArrayList<SpeciesPermission>();
+		List<SpeciesPermission> allowedTaxonList = new ArrayList<>();
 		try {
 			Query<SpeciesPermission> query = session.createQuery(qry);
 			query.setParameter("userId", userId);

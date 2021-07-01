@@ -68,7 +68,7 @@ public class TaxonomyServeletContextListener extends GuiceServletContextListener
 				configuration = configuration.configure();
 				SessionFactory sessionFactory = configuration.buildSessionFactory();
 
-				Map<String, String> props = new HashMap<String, String>();
+				Map<String, String> props = new HashMap<>();
 				props.put("javax.ws.rs.Application", ApplicationConfig.class.getName());
 				props.put("jersey.config.server.provider.packages", "com");
 				props.put("jersey.config.server.wadl.disableWadl", "true");
@@ -86,7 +86,7 @@ public class TaxonomyServeletContextListener extends GuiceServletContextListener
 			throws URISyntaxException, IOException, ClassNotFoundException {
 
 		List<String> classNames = getClassNamesFromPackage(packageName);
-		List<Class<?>> classes = new ArrayList<Class<?>>();
+		List<Class<?>> classes = new ArrayList<>();
 		for (String className : classNames) {
 			Class<?> cls = Class.forName(className);
 			Annotation[] annotations = cls.getAnnotations();
@@ -105,7 +105,7 @@ public class TaxonomyServeletContextListener extends GuiceServletContextListener
 			throws URISyntaxException, IOException {
 
 		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-		ArrayList<String> names = new ArrayList<String>();
+		ArrayList<String> names = new ArrayList<>();
 		URL packageURL = classLoader.getResource(packageName);
 
 		URI uri = new URI(packageURL.toString());

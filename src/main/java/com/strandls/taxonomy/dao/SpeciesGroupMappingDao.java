@@ -52,7 +52,7 @@ public class SpeciesGroupMappingDao extends AbstractDAO<SpeciesGroupMapping, Lon
 
 		String qry = "from SpeciesGroupMapping where speciesGroupId = :sGroup";
 		Session session = sessionFactory.openSession();
-		List<SpeciesGroupMapping> result = new ArrayList<SpeciesGroupMapping>();
+		List<SpeciesGroupMapping> result = new ArrayList<>();
 		try {
 			Query<SpeciesGroupMapping> query = session.createQuery(qry);
 			query.setParameter("sGroup", sGroup);

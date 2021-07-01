@@ -135,7 +135,7 @@ public class TaxonomyController {
 		try {
 
 			String[] taxList = taxonList.split(",");
-			List<Long> tList = new ArrayList<Long>();
+			List<Long> tList = new ArrayList<>();
 			for (String s : taxList) {
 				tList.add(Long.parseLong(s.trim()));
 			}

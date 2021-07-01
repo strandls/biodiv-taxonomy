@@ -63,7 +63,7 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 		}
 
 		String paths = taxoRegistry.getPath().replace("_", ",");
-		List<BreadCrumb> breadCrumbs = new ArrayList<BreadCrumb>();
+		List<BreadCrumb> breadCrumbs = new ArrayList<>();
 		List<TaxonomyDefinition> breadCrumbLists = taxonomyDao.breadCrumbSearch(paths);
 		for (TaxonomyDefinition td : breadCrumbLists) {
 			BreadCrumb breadCrumb = new BreadCrumb(td.getId(), td.getNormalizedForm());
@@ -80,7 +80,7 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 			if (speciesGroup.getTaxonConceptId() != null)
 				taxonList.add(speciesGroup.getTaxonConceptId().toString());
 		}
-		List<String> allTaxonomyList = new ArrayList<String>();
+		List<String> allTaxonomyList = new ArrayList<>();
 		for (String taxonId : taxonList) {
 			TaxonomyRegistry taxoRegistry = taxonomyRegistryDao.findbyTaxonomyId(Long.parseLong(taxonId));
 			String[] path = taxoRegistry.getPath().split("_");
@@ -104,10 +104,10 @@ public class TaxonomyServiceImpl implements TaxonomySerivce {
 
 	@Override
 	public List<TaxonTree> fetchTaxonTrees(List<Long> taxonList) {
-		List<TaxonTree> taxonTree = new ArrayList<TaxonTree>();
+		List<TaxonTree> taxonTree = new ArrayList<>();
 
 		for (Long taxon : taxonList) {
-			List<Long> taxonPath = new ArrayList<Long>();
+			List<Long> taxonPath = new ArrayList<>();
 			List<BreadCrumb> breadCrumbs = fetchByTaxonomyId(taxon);
 			for (BreadCrumb breadCrumb : breadCrumbs) {
 				taxonPath.add(breadCrumb.getId());
