@@ -3,6 +3,7 @@
  */
 package com.strandls.taxonomy.dao;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.hibernate.Session;
@@ -51,9 +52,12 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 		Session session = sessionFactory.openSession();
 		List<TaxonomyDefinition> result = null;
 		
-		String qry = "from TaxonomyDefinition td where td.id in("+path+") order by td.rank";
+		String[] paths = path.split(",");
+		
+		String qry = "from TaxonomyDefinition td where td.id in(:path) order by td.rank";
 		try {
 			Query<TaxonomyDefinition> query = session.createQuery(qry);
+			query.setParameter("path", Arrays.asList(paths));
 			result = query.getResultList();
 		} catch (Exception e) {
 			logger.error(e.getMessage());

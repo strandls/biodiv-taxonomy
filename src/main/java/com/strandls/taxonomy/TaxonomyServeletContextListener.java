@@ -61,7 +61,6 @@ public class TaxonomyServeletContextListener extends GuiceServletContextListener
 						configuration.addAnnotatedClass(cls);
 					}
 				} catch (ClassNotFoundException | IOException | URISyntaxException e) {
-					e.printStackTrace();
 					logger.error(e.getMessage());
 				}
 

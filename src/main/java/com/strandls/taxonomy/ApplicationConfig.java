@@ -56,7 +56,7 @@ public class ApplicationConfig extends Application {
 		try {
 			properties.load(in);
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.error(e.getMessage());
 		}
 
 		BeanConfig beanConfig = new BeanConfig();
