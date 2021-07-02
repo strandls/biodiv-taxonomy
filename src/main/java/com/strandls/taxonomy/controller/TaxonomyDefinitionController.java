@@ -330,7 +330,7 @@ public class TaxonomyDefinitionController {
 	public Response updateElastic(@Context HttpServletRequest request, @QueryParam("taxonIds") String taxonIdsString) {
 		try {
 			if (TaxonomyUtil.isAdmin(request)) {
-				List<Long> taxonIds = Arrays.asList(taxonIdsString.split(",")).stream().map(x -> Long.parseLong(x))
+				List<Long> taxonIds = Arrays.asList(taxonIdsString.split(",")).stream().map(Long::parseLong)
 						.collect(Collectors.toList());
 				List<MapQueryResponse> mapQueryResponses = taxonomyESOperation.pushToElastic(taxonIds);
 				return Response.status(Status.OK).entity(mapQueryResponses).build();

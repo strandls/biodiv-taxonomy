@@ -95,7 +95,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	private ObjectMapper objectMapper;
 
 	@Inject
-	private TaxonomyCache<String, ParsedName> taxonomyCache;
+	private TaxonomyCache taxonomyCache;
 
 	@Inject
 	private LogActivities logActivity;
@@ -117,7 +117,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	@Override
 	public List<TaxonomyDefinition> saveList(HttpServletRequest request, List<TaxonomySave> taxonomyList)
 			throws ApiException {
-		List<TaxonomyDefinition> taxonomyDefinitions = new ArrayList<TaxonomyDefinition>();
+		List<TaxonomyDefinition> taxonomyDefinitions = new ArrayList<>();
 		for (TaxonomySave taxonomySave : taxonomyList) {
 			TaxonomyDefinition taxonomyDefinition = save(request, taxonomySave);
 			taxonomyDefinitions.add(taxonomyDefinition);
@@ -131,10 +131,10 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		List<TaxonomyDefinition> taxonomyDefinitions = addTaxonomyDefintionNodes(request, taxonomySave);
 
 		TaxonomyDefinition taxonomyDefinition = null;
-		if (taxonomyDefinitions == null || taxonomyDefinitions.isEmpty())
+		if (taxonomyDefinitions.isEmpty())
 			return taxonomyDefinition;
 
-		List<Long> taxonIds = new ArrayList<Long>();
+		List<Long> taxonIds = new ArrayList<>();
 		for (TaxonomyDefinition td : taxonomyDefinitions) {
 			taxonIds.add(td.getId());
 
@@ -153,22 +153,21 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		List<TaxonomyDefinition> createdTaxonomy;
 		try {
 			createdTaxonomy = addTaxonomy(request, taxonomySave);
-		} catch (TaxonCreationException e) {
-			return new ArrayList<TaxonomyDefinition>();
-		} catch (UnRecongnizedRankException e) {
-			return new ArrayList<TaxonomyDefinition>();
+		} catch (TaxonCreationException | UnRecongnizedRankException e) {
+			return new ArrayList<>();
 		}
 
-		if (createdTaxonomy == null || createdTaxonomy.isEmpty())
-			return new ArrayList<TaxonomyDefinition>();
+		if (createdTaxonomy.isEmpty())
+			return new ArrayList<>();
 
 		return createdTaxonomy;
 	}
-	
+
 	public TaxonomyDefinition createNotAssignedName(String rank, TaxonomyPosition position, Long userId)
 			throws UnRecongnizedRankException, ApiException, TaxonCreationException {
 		ParsedName parsedName = taxonomyCache.getName(rank, "Not assigned");
-		return taxonomyDao.createTaxonomyDefiniiton(parsedName, rank, TaxonomyStatus.ACCEPTED, position, "", "", userId);
+		return taxonomyDao.createTaxonomyDefiniiton(parsedName, rank, TaxonomyStatus.ACCEPTED, position, "", "",
+				userId);
 	}
 
 	private TaxonomyDefinition createRoot(StringBuilder path) throws ApiException, TaxonCreationException {
@@ -233,19 +232,19 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		String scientificName = taxonomyData.getScientificName();
 
 		StringBuilder path = new StringBuilder();
-		Map<String, TaxonomyDefinition> hierarchyCreated = new LinkedHashMap<String, TaxonomyDefinition>();
 
 		ParsedName parsedName = taxonomyCache.getName(rankName, scientificName);
 		TaxonomyDefinition taxonomyDefinition = getLeafMatchedNode(parsedName, rankName, status);
 
-		List<TaxonomyDefinition> taxonomyDefinitions = new ArrayList<TaxonomyDefinition>();
+		List<TaxonomyDefinition> taxonomyDefinitions = new ArrayList<>();
 
 		// Create the node if doesn't exist
 		if (taxonomyDefinition == null) {
 
 			// Create and update hierarchy if not exist
 			if (status.equals(TaxonomyStatus.ACCEPTED)) {
-				hierarchyCreated = updateAndCreateHierarchyUtil(path, ranks, userId, taxonomyData);
+				Map<String, TaxonomyDefinition> hierarchyCreated = updateAndCreateHierarchyUtil(path, ranks, userId,
+						taxonomyData);
 				taxonomyDefinitions.addAll(hierarchyCreated.values());
 			}
 
@@ -313,7 +312,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	 */
 	private List<TaxonomyDefinition> addSynonym(HttpServletRequest request, Long taxonId, SynonymData synonymData)
 			throws ApiException, UnRecongnizedRankException {
-		List<TaxonomyDefinition> taxonomyDefinitions = new ArrayList<TaxonomyDefinition>();
+		List<TaxonomyDefinition> taxonomyDefinitions = new ArrayList<>();
 
 		String name = synonymData.getName();
 		String source = synonymData.getDataSource();
@@ -321,7 +320,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		String rankName = synonymData.getRank();
 
 		for (String synonymName : name.split(";")) {
-			synonymName.trim();
+			synonymName = synonymName.trim();
 
 			ParsedName synonymParsedName;
 			String synonymRank;
@@ -397,7 +396,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		rankToName.remove(rankName);
 
 		// Generate the rank to parse name pool of object.
-		Map<String, ParsedName> rankToParsedName = new HashMap<String, ParsedName>();
+		Map<String, ParsedName> rankToParsedName = new HashMap<>();
 		for (Map.Entry<String, String> e : rankToName.entrySet()) {
 			ParsedName parsedName = taxonomyCache.getName(e.getKey(), e.getValue());
 			rankToParsedName.put(e.getKey().toLowerCase(), parsedName);
@@ -423,13 +422,13 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		if (taxonomyDefinition != null) {
 			String taxonPath = taxonomyRegistryDao.findbyTaxonomyId(taxonomyDefinition.getId(), null).getPath();
 			path.append(taxonPath);
-			return new LinkedHashMap<String, TaxonomyDefinition>();
+			return new LinkedHashMap<>();
 		} else {
 			// Not found the match then go up the hierarchy to find the match
 			rankToParsedName.remove(highestRankName);
 			if (highestRankName.equalsIgnoreCase("root")) {
 				TaxonomyDefinition root = createRoot(path);
-				createdHierarchy = new LinkedHashMap<String, TaxonomyDefinition>();
+				createdHierarchy = new LinkedHashMap<>();
 				createdHierarchy.put("root", root);
 				return createdHierarchy;
 			}
@@ -504,7 +503,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 	@Override
 	public Map<String, Object> uploadFile(HttpServletRequest request, FormDataMultiPart multiPart)
 			throws IOException, ApiException, InterruptedException, ExecutionException {
-		Map<String, Object> result = new HashMap<String, Object>();
+		Map<String, Object> result = new HashMap<>();
 		Long startTime = System.currentTimeMillis();
 		FormDataBodyPart formdata = multiPart.getField("metadata");
 		if (formdata == null) {
@@ -524,7 +523,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			String[] headers = it.next();
 			fileMetaData.updateIndices(headers);
 
-			List<Long> taxonIds = new ArrayList<Long>();
+			List<Long> taxonIds = new ArrayList<>();
 			while (it.hasNext()) {
 				String[] data = it.next();
 				TaxonomySave taxonomySave = fileMetaData.readOneRow(utilityServiceApi, data);
@@ -533,7 +532,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 					List<TaxonomyDefinition> createdTaxonomy = addTaxonomyDefintionNodes(request, taxonomySave);
 
 					// Push taxonomy to the elastic
-					if (createdTaxonomy != null && !createdTaxonomy.isEmpty()) {
+					if (!createdTaxonomy.isEmpty()) {
 						for (TaxonomyDefinition td : createdTaxonomy) {
 							if (td != null)
 								taxonIds.add(td.getId());
@@ -547,7 +546,6 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			reader.close();
 		}
 		Long endTime = System.currentTimeMillis();
-		System.out.println("Total time : " + (endTime - startTime));
 		result.put("status", "success");
 		result.put("uploadTime (in ms) : ", (endTime - startTime));
 		result.put("Cache hit : ", TaxonomyCache.getCacheHit());
@@ -574,7 +572,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 	private List<TaxonomyDefinition> findSynonyms(Long taxonId) {
 		List<AcceptedSynonym> acceptedSynonymsList = acceptedSynonymDao.findByAccepetdId(taxonId);
-		List<TaxonomyDefinition> synonymList = new ArrayList<TaxonomyDefinition>();
+		List<TaxonomyDefinition> synonymList = new ArrayList<>();
 		if (acceptedSynonymsList != null && !acceptedSynonymsList.isEmpty()) {
 			for (AcceptedSynonym synonym : acceptedSynonymsList) {
 				TaxonomyDefinition taxonomy = taxonomyDao.findById(synonym.getSynonymId());
@@ -660,14 +658,14 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				activityType = "Updated synonym";
 			}
 
-			logActivity.LogActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId, "species",
+			logActivity.logActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId, "species",
 					synonymId, activityType, null);
 
 			return findSynonyms(taxonId);
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
-		return null;
+		return new ArrayList<>();
 	}
 
 	@Override
@@ -682,13 +680,13 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 			String desc = "Deleted synonym : " + taxnomyDefinition.getName();
 
-			logActivity.LogActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId, "species",
+			logActivity.logActivity(request.getHeader(HttpHeaders.AUTHORIZATION), desc, speciesId, speciesId, "species",
 					taxnomyDefinition.getId(), "Deleted synonym", null);
 			return findSynonyms(taxonId);
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
-		return null;
+		return new ArrayList<>();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -712,9 +710,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 				if (!taxonomyDefinitions.isEmpty()) {
 					// Taking the first one to auto Fill
-					List<TaxonomyDefinitionAndRegistry> parentMatched = new ArrayList<TaxonomyDefinitionAndRegistry>();
-					// Map<Long, List<TaxonomyRegistryResponse>> parentMatched = new HashMap<Long,
-					// List<TaxonomyRegistryResponse>>();
+					List<TaxonomyDefinitionAndRegistry> parentMatched = new ArrayList<>();
 					for (TaxonomyDefinition taxonomyDefinition : taxonomyDefinitions) {
 						List<TaxonomyRegistryResponse> taxonomyRegistry = taxonomyRegistryDao
 								.getPathToRoot(taxonomyDefinition.getId(), null);
@@ -726,7 +722,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 				}
 			}
 		} else {
-			List<TaxonomyDefinitionAndRegistry> matched = new ArrayList<TaxonomyDefinitionAndRegistry>();
+			List<TaxonomyDefinitionAndRegistry> matched = new ArrayList<>();
 			for (TaxonomyDefinition taxonomyDefinition : taxonomyDefinitions) {
 				List<TaxonomyRegistryResponse> taxonomyRegistry = taxonomyRegistryDao
 						.getPathToRoot(taxonomyDefinition.getId(), null);
@@ -815,7 +811,7 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			}
 
 			// Add the hierarchy and the node
-			Map<String, ParsedName> rankToParsedName = new HashMap<String, ParsedName>();
+			Map<String, ParsedName> rankToParsedName = new HashMap<>();
 			for (Map.Entry<String, String> e : taxonomyStatusUpdate.getHierarchy().entrySet()) {
 				ParsedName parsedName = utilityServiceApi.getNameParsed(e.getValue());
 				rankToParsedName.put(e.getKey(), parsedName);
@@ -830,14 +826,15 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			// Update the tree and add to the registry
 			path.append(".");
 			path.append(taxonId);
-			taxonomyRegistryDao.createRegistry(null, path.toString(), taxonomyDefinition.getRank(), taxonId, userId, null);
+			taxonomyRegistryDao.createRegistry(null, path.toString(), taxonomyDefinition.getRank(), taxonId, userId,
+					null);
 
 			// Update the status
 			taxonomyDefinition.setStatus(TaxonomyStatus.ACCEPTED.name());
 			taxonomyDefinition = update(taxonomyDefinition);
 
 			// Update the elastic for all the accepted name it was associated and the node
-			List<Long> taxonIds = new ArrayList<Long>();
+			List<Long> taxonIds = new ArrayList<>();
 			taxonIds.add(taxonId);
 			taxonomyESUpdate.pushToElastic(taxonIds);
 
@@ -887,20 +884,20 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			String statusListString, String positionListString, Integer limit, Integer offset) throws IOException {
 
 		// Verify the rank, add only lower case of it
-		List<String> rankList = new ArrayList<String>();
-		for(String rank : rankListString.split(","))
+		List<String> rankList = new ArrayList<>();
+		for (String rank : rankListString.split(","))
 			rankList.add(rank.toLowerCase().trim());
-		
+
 		// Verify and construct list of status
-		List<String> statusList = new ArrayList<String>();
-		for(String status : statusListString.split(",")) {
+		List<String> statusList = new ArrayList<>();
+		for (String status : statusListString.split(",")) {
 			status = status.toUpperCase().trim();
 			status = TaxonomyStatus.fromValue(status).name();
 			statusList.add(status);
 		}
-		
+
 		// verify and construct list of position
-		List<String> positionList = new ArrayList<String>();
+		List<String> positionList = new ArrayList<>();
 		for (String position : positionListString.split(",")) {
 			position = position.toUpperCase().trim();
 			position = TaxonomyPosition.fromValue(position).name();

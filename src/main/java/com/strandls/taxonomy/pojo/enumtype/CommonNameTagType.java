@@ -9,11 +9,11 @@ import javax.xml.bind.annotation.XmlType;
 public enum CommonNameTagType {
 
 	@XmlEnumValue("name")
-	name("name"),
+	NAME("name"),
 	@XmlEnumValue("threeLetterCode")
-	threeLetterCode("threeLetterCode"),
+	THREE_LETTER_CODE("threeLetterCode"),
 	@XmlEnumValue("twoLetterCode")
-	twoLetterCode("twoLetterCode");
+	TWO_LETTER_CODE("twoLetterCode");
 
 	private String value;
 	

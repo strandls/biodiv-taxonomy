@@ -76,6 +76,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		return entity;
 	}
 
+	@SuppressWarnings("unchecked")
 	public TaxonomyRegistry findbyTaxonomyId(Long taxonomyId, Long classificationId) {
 
 		classificationId = classificationId == null ? CLASSIFICATION_ID : classificationId;
@@ -118,11 +119,12 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		return findByTaxonIdOnTraitList(traitTaxonIds, speciesGroupTaxonIds, CLASSIFICATION_ID);
 	}
 
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public List<String> findByTaxonIdOnTraitList(List<Long> traitTaxonIds, Set<String> speciesGroupTaxonIds,
 			Long classificationId) {
 
 		if (speciesGroupTaxonIds.isEmpty())
-			return new ArrayList<String>();
+			return new ArrayList<>();
 		String speciesGroupTaxons = String.join("|", speciesGroupTaxonIds);
 		speciesGroupTaxons = "*." + speciesGroupTaxons + ".*";
 
@@ -133,7 +135,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 
 		Session session = sessionFactory.openSession();
 
-		List<String> result = new ArrayList<String>();
+		List<String> result = new ArrayList<>();
 		try {
 			NativeQuery query = session.createNativeQuery(queryString);
 			query.setParameter("classificationId", classificationId);
@@ -148,6 +150,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		return result;
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public List<TaxonRelation> list(Long parent, List<Long> taxonIds, boolean expandTaxon, Long classificationId) {
 		Session session = sessionFactory.openSession();
 		String queryString = "";
@@ -168,7 +171,8 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 			} else if (parent != null) {
 				parentCheck = "*." + parent + ".*{1}";
 			} else {
-				return new ArrayList<TaxonRelation>();
+				session.close();
+				return new ArrayList<>();
 			}
 			queryString = "select t.id, t.name, t.rank, ltree2text(tR.path) as path, tR.classification_id as classification, "
 					+ " case when nlevel(tR.path) > 1 THEN ltree2text(subpath(tR.path,-2,1)) else null end as parent, t.position "
@@ -189,9 +193,10 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 			session.close();
 		}
 
-		return null;
+		return new ArrayList<>();
 	}
 
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public List<String> getPathToRoot(List<Long> taxonIds, Long classificationId) {
 		Session session = sessionFactory.openSession();
 		try {
@@ -204,15 +209,16 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 			classificationId = classificationId == null ? CLASSIFICATION_ID : classificationId;
 
 			query.setParameter("classificationId", classificationId);
-			return (List<String>) query.getResultList();
+			return query.getResultList();
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		} finally {
 			session.close();
 		}
-		return null;
+		return new ArrayList<>();
 	}
 
+	@SuppressWarnings("rawtypes")
 	public List<TaxonomyRegistryResponse> getPathToRoot(Long taxonId, Long classificationId) {
 		Session session = sessionFactory.openSession();
 		try {
@@ -230,7 +236,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		} finally {
 			session.close();
 		}
-		return null;
+		return new ArrayList<>();
 	}
 	
 	/**
@@ -253,12 +259,13 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 			return query.getResultList();
 		} catch (Exception e) {
 			logger.error(e.getMessage());
-			return null;
+			return new ArrayList<>();
 		} finally {
 			session.close();
 		}
 	}
 	
+	@SuppressWarnings("rawtypes")
 	public List<TaxonomyRegistryResponse> getPathToRootForOldHierarchy(Long taxonId, Long classificationId) {
 		Session session = sessionFactory.openSession();
 		try {
@@ -276,13 +283,14 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		} finally {
 			session.close();
 		}
-		return null;
+		return new ArrayList<>();
 	}
 	
+	@SuppressWarnings("unchecked")
 	public List<TaxonomyRegistryResponse> getNameFromPath(String path) {
 		Session session = sessionFactory.openSession();
 		try {
-			List<Long> taxonIds = new ArrayList<Long>();
+			List<Long> taxonIds = new ArrayList<>();
 			for(String s : path.split("\\."))
 				taxonIds.add(Long.parseLong(s));
 			
@@ -334,6 +342,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 	 * @param taxonId
 	 * @return
 	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public List<TaxonomyRegistry> getSnappingCandidates(Long taxonId) {
 		Session session = sessionFactory.openSession();
 		Long classificationId = getDefaultClassificationId();
@@ -358,12 +367,13 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 			return query.getResultList();
 		} catch (Exception e) {
 			logger.error(e.getMessage());
-			return new ArrayList<TaxonomyRegistry>();
+			return new ArrayList<>();
 		} finally {
 			session.close();
 		}
 	}
 
+	@SuppressWarnings("rawtypes")
 	public TaxonomyRegistry getParentToSnapOn(String path) {
 		Session session = sessionFactory.openSession();
 		Long classificationId = getDefaultClassificationId();

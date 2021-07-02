@@ -10,7 +10,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import javax.persistence.NoResultException;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 
@@ -18,9 +17,8 @@ import org.hibernate.Criteria;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
+import org.hibernate.criterion.CriteriaSpecification;
 import org.hibernate.query.Query;
-
-import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 
 public abstract class AbstractDAO<T, K extends Serializable> {
 
@@ -108,6 +106,7 @@ public abstract class AbstractDAO<T, K extends Serializable> {
 	 * @param parameters
 	 * @return
 	 */
+	@SuppressWarnings("unchecked")
 	public Long getRowCount(String qryString, Map<String, Object> parameters) {
 		Session session = sessionFactory.openSession();
 		String queryString = "select count(*) from ( " + qryString + ") C";
@@ -151,7 +150,7 @@ public abstract class AbstractDAO<T, K extends Serializable> {
 	public List<T> findAll() {
 		Session session = sessionFactory.openSession();
 		Criteria criteria = session.createCriteria(daoType);
-		List<T> entities = criteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY).list();
+		List<T> entities = criteria.setResultTransformer(CriteriaSpecification.DISTINCT_ROOT_ENTITY).list();
 		session.close();
 		return entities;
 	}
@@ -159,51 +158,10 @@ public abstract class AbstractDAO<T, K extends Serializable> {
 	@SuppressWarnings({ "unchecked", "deprecation" })
 	public List<T> findAll(int limit, int offset) {
 		Session session = sessionFactory.openSession();
-		Criteria criteria = session.createCriteria(daoType).setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
+		Criteria criteria = session.createCriteria(daoType).setResultTransformer(CriteriaSpecification.DISTINCT_ROOT_ENTITY);
 		List<T> entities = criteria.setFirstResult(offset).setMaxResults(limit).list();
 		session.close();
 		return entities;
-	}
-
-	// TODO:improve this to do dynamic finder on any property
-	@SuppressWarnings("unchecked")
-	public T findByPropertyWithCondition(String property, Object value, String condition) {
-		String queryStr = "" + "from " + daoType.getSimpleName() + " t " + "where t." + property + " " + condition
-				+ " :value";
-		Session session = sessionFactory.openSession();
-		Query<T> query = session.createQuery(queryStr);
-		query.setParameter("value", value);
-
-		T entity = null;
-		try {
-			entity = (T) query.getSingleResult();
-		} catch (NoResultException e) {
-			throw e;
-		}
-		session.close();
-		return entity;
-
-	}
-
-	@SuppressWarnings("unchecked")
-	public List<T> getByPropertyWithCondtion(String property, Object value, String condition, int limit, int offset) {
-		String queryStr = "" + "from " + daoType.getSimpleName() + " t " + "where t." + property + " " + condition
-				+ " :value" + " order by id";
-		Session session = sessionFactory.openSession();
-		Query<T> query = session.createQuery(queryStr);
-		query.setParameter("value", value);
-
-		List<T> resultList = new ArrayList<T>();
-		try {
-			if (limit > 0 && offset >= 0)
-				query = query.setFirstResult(offset).setMaxResults(limit);
-			resultList = query.getResultList();
-
-		} catch (NoResultException e) {
-			throw e;
-		}
-		session.close();
-		return resultList;
 	}
 
 	public static <T> T map(Class<T> type, Object[] tuple) {
@@ -220,13 +178,14 @@ public abstract class AbstractDAO<T, K extends Serializable> {
 	}
 
 	public static <T> List<T> map(Class<T> type, List<Object[]> records) {
-		List<T> result = new LinkedList<T>();
-		for (Object[] record : records) {
-			result.add(map(type, record));
+		List<T> result = new LinkedList<>();
+		for (Object[] record1 : records) {
+			result.add(map(type, record1));
 		}
 		return result;
 	}
 
+	@SuppressWarnings("rawtypes")
 	public static <T> List<T> getResultList(Query query, Class<T> type) {
 		@SuppressWarnings("unchecked")
 		List<Object[]> records = query.getResultList();

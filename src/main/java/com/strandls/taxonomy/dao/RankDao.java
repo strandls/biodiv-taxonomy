@@ -61,7 +61,7 @@ public class RankDao extends AbstractDAO<Rank, Long> {
 			try {
 				return query.getResultList();
 			} catch (NoResultException e) {
-				return new ArrayList<Rank>();
+				return new ArrayList<>();
 			}
 		}
 	}

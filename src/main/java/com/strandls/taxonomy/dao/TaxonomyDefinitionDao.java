@@ -43,6 +43,7 @@ import com.strandls.utility.pojo.ParsedName;
 public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long> {
 
 	private static final String TAXONOMY_NAMELIST_QUERY = "taxonomyNamelist.sql";
+	private static final String TAXON_ID = "taxonId";
 
 	private final Logger logger = LoggerFactory.getLogger(TaxonomyDefinitionDao.class);
 
@@ -85,7 +86,7 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 		Session session = sessionFactory.openSession();
 		List<TaxonomyDefinition> result = null;
 
-		String qry = "from " + daoType.getSimpleName() + " t where t.id in(" + path + ")";// + " order by t.rank";
+		String qry = "from " + daoType.getSimpleName() + " t where t.id in(" + path + ")";
 		try {
 			Query<TaxonomyDefinition> query = session.createQuery(qry);
 			result = query.getResultList();
@@ -108,10 +109,10 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 			try {
 				List<TaxonomyDefinition> result = query.getResultList();
 				if (result == null || result.isEmpty())
-					return new ArrayList<TaxonomyDefinition>();
+					return new ArrayList<>();
 				return result;
 			} catch (NoResultException e) {
-				return new ArrayList<TaxonomyDefinition>();
+				return new ArrayList<>();
 			}
 		}
 	}
@@ -131,7 +132,7 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 		} finally {
 			session.close();
 		}
-		return null;
+		return new ArrayList<>();
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
@@ -146,14 +147,14 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 			Query query = session.createNativeQuery(sqlString);
 			query.setParameter("term", term.toLowerCase().trim());
 			if (taxonId != null)
-				query.setParameter("taxonId", taxonId);
+				query.setParameter(TAXON_ID, taxonId);
 			return query.getResultList();
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		} finally {
 			session.close();
 		}
-		return null;
+		return new ArrayList<>();
 	}
 
 	/**
@@ -171,14 +172,14 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 			Query query = session.createNativeQuery(sqlString).addScalar("taxon_definition_id",
 					StandardBasicTypes.LONG);
 			if (taxonId != null)
-				query.setParameter("taxonId", taxonId);
+				query.setParameter(TAXON_ID, taxonId);
 			return query.getResultList();
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		} finally {
 			session.close();
 		}
-		return null;
+		return new ArrayList<>();
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -199,9 +200,6 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 			acceptedSynonym.setVersion(0L);
 			session.save(acceptedSynonym);
 
-			// Transfer synonym to the new Accepted name
-			// String qry = "update AcceptedSynonym set acceptedId = :newAcceptedId where
-			// acceptedId = :acceptedId";
 			Query query = session.createNamedQuery("synonymTransfer");
 			query.setParameter("acceptedId", taxonId);
 			query.setParameter("newAcceptedId", newTaxonId);
@@ -306,7 +304,7 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 
 		Query<Integer> countQuery = session.createNativeQuery(countQueryString).addScalar("count",
 				StandardBasicTypes.INTEGER);
-		countQuery.setParameter("taxonId", taxonId);
+		countQuery.setParameter(TAXON_ID, taxonId);
 		countQuery.setParameter("classificationId", classificationId);
 		countQuery.setParameter("rank", rankList);
 		countQuery.setParameter("status", statusList);
@@ -320,7 +318,7 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 		classificationId = classificationId == null ? TaxonomyRegistryDao.getDefaultClassificationId()
 				: classificationId;
 
-		query.setParameter("taxonId", taxonId);
+		query.setParameter(TAXON_ID, taxonId);
 		query.setParameter("classificationId", classificationId);
 		query.setParameter("rank", rankList);
 		query.setParameter("status", statusList);
