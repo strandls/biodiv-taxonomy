@@ -74,7 +74,7 @@ public class FileMetadata {
 
 	public void updateIndices(String[] headers) {
 		if (commonNameTagType == null)
-			commonNameTagType = CommonNameTagType.THREE_LETTER_CODE;
+			commonNameTagType = CommonNameTagType.threeLetterCode;
 
 		for (int i = 0; i < headers.length; i++) {
 			String header = headers[i];
