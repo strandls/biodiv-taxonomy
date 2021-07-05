@@ -224,7 +224,6 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		TaxonomyStatus status = taxonomyData.getStatus();
 		TaxonomyPosition position = taxonomyData.getPosition();
 		List<Rank> ranks = taxonomyCache.getRanks();
-		System.out.println("Got the rank");
 
 		String source = taxonomyData.getSource();
 		String sourceId = taxonomyData.getSourceId();
@@ -235,7 +234,6 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 		StringBuilder path = new StringBuilder();
 
 		ParsedName parsedName = taxonomyCache.getName(rankName, scientificName);
-		System.out.println("Name parsing done");
 		TaxonomyDefinition taxonomyDefinition = getLeafMatchedNode(parsedName, rankName, status);
 
 		List<TaxonomyDefinition> taxonomyDefinitions = new ArrayList<>();
@@ -529,7 +527,6 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 			while (it.hasNext()) {
 				String[] data = it.next();
 				TaxonomySave taxonomySave = fileMetaData.readOneRow(utilityServiceApi, data);
-				System.out.println("Read row finished");
 				if (taxonomySave != null) {
 
 					List<TaxonomyDefinition> createdTaxonomy = addTaxonomyDefintionNodes(request, taxonomySave);
