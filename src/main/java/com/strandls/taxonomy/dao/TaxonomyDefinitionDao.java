@@ -47,7 +47,7 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 	}
 
 	@SuppressWarnings("unchecked")
-	public List<TaxonomyDefinition> breadCrumbSearch(List<Integer> path) {
+	public List<TaxonomyDefinition> breadCrumbSearch(List<Long> path) {
 		Session session = sessionFactory.openSession();
 		List<TaxonomyDefinition> result = null;
 
