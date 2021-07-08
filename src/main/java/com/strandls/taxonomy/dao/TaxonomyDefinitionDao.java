@@ -3,16 +3,15 @@
  */
 package com.strandls.taxonomy.dao;
 
-import java.util.Arrays;
 import java.util.List;
+
+import javax.inject.Inject;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.query.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import javax.inject.Inject;
 
 import com.strandls.taxonomy.pojo.TaxonomyDefinition;
 import com.strandls.taxonomy.util.AbstractDAO;
@@ -46,26 +45,23 @@ public class TaxonomyDefinitionDao extends AbstractDAO<TaxonomyDefinition, Long>
 		}
 		return entity;
 	}
-	
+
 	@SuppressWarnings("unchecked")
-	public List<TaxonomyDefinition> breadCrumbSearch(String path) {
+	public List<TaxonomyDefinition> breadCrumbSearch(List<Integer> path) {
 		Session session = sessionFactory.openSession();
 		List<TaxonomyDefinition> result = null;
-		
-		String[] paths = path.split(",");
-		
-		String qry = "from TaxonomyDefinition td where td.id in(:path) order by td.rank";
+
+		String qry = "from TaxonomyDefinition td where td.id in :path order by td.rank";
 		try {
 			Query<TaxonomyDefinition> query = session.createQuery(qry);
-			query.setParameter("path", Arrays.asList(paths));
+			query.setParameter("path", path);
 			result = query.getResultList();
 		} catch (Exception e) {
 			logger.error(e.getMessage());
-		}
-		finally {
+		} finally {
 			session.close();
 		}
-		
+
 		return result;
 	}
 
