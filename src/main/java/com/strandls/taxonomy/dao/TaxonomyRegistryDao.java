@@ -131,7 +131,8 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		classificationId = classificationId == null ? CLASSIFICATION_ID : classificationId;
 
 		String queryString = "select taxon_definition_id from taxonomy_registry t where t.classification_id = :classificationId and "
-				+ "t.path @> any(select tr.path from taxonomy_registry tr where tr.taxon_definition_id in (:traitTaxonIds) and tr.path ~ lquery(:speciesGroupTaxons))";
+				+ "t.path @> any(select tr.path from taxonomy_registry tr where tr.taxon_definition_id in (:traitTaxonIds) "
+				+ "and tr.path ~ lquery(:speciesGroupTaxons) and classification_id = :classificationId)";
 
 		Session session = sessionFactory.openSession();
 
@@ -201,7 +202,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		Session session = sessionFactory.openSession();
 		try {
 			String sqlString = "select cast(taxon_definition_id as varchar) from taxonomy_registry where path @> "
-					+ "any(select path from taxonomy_registry where taxon_definition_id in (:taxonIds)) and "
+					+ "any(select path from taxonomy_registry where taxon_definition_id in (:taxonIds) and classification_id=:classificationId) and "
 					+ "classification_id=:classificationId";
 			Query query = session.createNativeQuery(sqlString);
 			query.setParameter("taxonIds", taxonIds);
@@ -223,7 +224,7 @@ public class TaxonomyRegistryDao extends AbstractDAO<TaxonomyRegistry, Long> {
 		Session session = sessionFactory.openSession();
 		try {
 			String sqlString = "select cast(td.id as varchar), td.rank, td.name, td.canonical_form from (select * from taxonomy_registry where path @> "
-					+ "(select path from taxonomy_registry where taxon_definition_id = :taxonId) and "
+					+ "(select path from taxonomy_registry where taxon_definition_id = :taxonId and classification_id=:classificationId) and "
 					+ "classification_id=:classificationId) tr " + "left outer join taxonomy_definition td "
 					+ "on td.id = tr.taxon_definition_id order by tr.path";
 			Query query = session.createNativeQuery(sqlString);
