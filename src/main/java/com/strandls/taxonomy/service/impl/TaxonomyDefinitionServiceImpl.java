@@ -885,29 +885,21 @@ public class TaxonomyDefinitionServiceImpl extends AbstractService<TaxonomyDefin
 
 		// Verify the rank, add only lower case of it
 		List<String> rankList = new ArrayList<>();
-		for (String rank : rankListString.split(","))
-			rankList.add(rank.toLowerCase().trim());
+		if (rankListString == null || "".equals(rankListString))
+			rankList = rankService.getAllRankNames();
+		else {
+			for (String rank : rankListString.split(","))
+				rankList.add(rank.toLowerCase().trim());
+		}
 
 		// Verify and construct list of status
-		List<String> statusList = new ArrayList<>();
-		for (String status : statusListString.split(",")) {
-			status = status.toUpperCase().trim();
-			status = TaxonomyStatus.fromValue(status).name();
-			statusList.add(status);
-		}
+		List<String> statusList = TaxonomyStatus.getAllOrSpecified(statusListString);
 
 		// verify and construct list of position
-		List<String> positionList = new ArrayList<>();
-		for (String position : positionListString.split(",")) {
-			position = position.toUpperCase().trim();
-			position = TaxonomyPosition.fromValue(position).name();
-			positionList.add(position);
-		}
+		List<String> positionList = TaxonomyPosition.getAllOrSpecified(positionListString);
 
 		// Get the result based on query
-		TaxonomyNameListResponse taxonomyNameListResponse = taxonomyDao.getTaxonomyNameList(taxonId, classificationId,
+		return taxonomyDao.getTaxonomyNameList(taxonId, classificationId,
 				rankList, statusList, positionList, limit, offset);
-
-		return taxonomyNameListResponse;
 	}
 }
